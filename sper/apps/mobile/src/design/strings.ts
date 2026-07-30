@@ -65,7 +65,7 @@ export const strings = {
     subtext: 'Everyone agrees before the circle opens.',
   },
 
-  radar: {
+  sper: {
     title: 'Your circle',
     empty: 'No check-ins yet today. Yours can be the first.',
     checkInCta: 'Wanna update your SPER?',

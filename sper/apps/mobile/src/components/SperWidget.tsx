@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import type { RadarEntryDTO } from '@sper/shared-types';
+import type { SperEntryDTO } from '@sper/shared-types';
 import { MemberOrb } from './MemberOrb';
 import { space } from '../design/tokens';
 
@@ -9,12 +9,12 @@ import { space } from '../design/tokens';
  * ringed by their five check-in dimensions — no history scroll, no numbers,
  * just presence and weather. Tap anyone for the full picture.
  */
-export function RadarWidget({
+export function SperWidget({
   entries,
   onSelect,
 }: {
-  entries: RadarEntryDTO[];
-  onSelect: (entry: RadarEntryDTO) => void;
+  entries: SperEntryDTO[];
+  onSelect: (entry: SperEntryDTO) => void;
 }) {
   return (
     <View style={styles.wrap}>
@@ -29,4 +29,4 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, justifyContent: 'flex-start' },
 });
 
-export default RadarWidget;
+export default SperWidget;

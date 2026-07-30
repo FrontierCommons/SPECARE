@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import type { RadarEntryDTO } from '@sper/shared-types';
+import type { SperEntryDTO } from '@sper/shared-types';
 import { Touchable } from './Touchable';
 import { Avatar } from './Avatar';
 import { DIMENSIONS, dimState } from '../lib/checkinState';
@@ -30,8 +30,8 @@ export function MemberOrb({
   entry,
   onPress,
 }: {
-  entry: RadarEntryDTO;
-  onPress: (entry: RadarEntryDTO) => void;
+  entry: SperEntryDTO;
+  onPress: (entry: SperEntryDTO) => void;
 }) {
   const label = DIMENSIONS.map((d) => dimState(entry, d) ?? 'no answer').join(', ');
   return (

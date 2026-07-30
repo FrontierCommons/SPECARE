@@ -132,11 +132,11 @@ describe('Full circle → check-in → care → touchpoint flow', () => {
     const checkinId = res.json().checkin.id as string;
     expect(res.json().notification.verse).toBeTruthy();
 
-    // Radar + care cards visible to friend
+    // Sper + care cards visible to friend
     res = await app.inject({
-      method: 'GET', url: `/api/v1/circles/${circleId}/radar`, headers: auth(friend.token),
+      method: 'GET', url: `/api/v1/circles/${circleId}/sper`, headers: auth(friend.token),
     });
-    expect(res.json().radar).toHaveLength(2);
+    expect(res.json().sper).toHaveLength(2);
     res = await app.inject({
       method: 'GET', url: `/api/v1/circles/${circleId}/care-cards`, headers: auth(friend.token),
     });
@@ -198,7 +198,7 @@ describe('HTTP validation edges', () => {
     expect(res.statusCode).toBe(422);
   });
 
-  it('non-member cannot read another circle radar (403)', async () => {
+  it('non-member cannot read another circle sper (403)', async () => {
     const owner = await registerUser('OwnerX');
     const stranger = await registerUser('Stranger');
     const circleId = (
@@ -207,7 +207,7 @@ describe('HTTP validation edges', () => {
       })
     ).json().circle.id;
     const res = await app.inject({
-      method: 'GET', url: `/api/v1/circles/${circleId}/radar`, headers: auth(stranger.token),
+      method: 'GET', url: `/api/v1/circles/${circleId}/sper`, headers: auth(stranger.token),
     });
     expect(res.statusCode).toBe(403);
   });

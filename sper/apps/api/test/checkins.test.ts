@@ -152,8 +152,8 @@ describe('CheckInService.submit — guards & edge cases', () => {
     await service
       .submit({ userId: u.id, circleId: circle.id, ...calm })
       .catch(() => undefined);
-    const radar = await service.radar(circle.id, u.id).catch(() => []);
-    expect(radar.every((r) => r.checkin_id === null)).toBe(true);
+    const sper = await service.sper(circle.id, u.id).catch(() => []);
+    expect(sper.every((r) => r.checkin_id === null)).toBe(true);
   });
 
   it('lone-member circle: distress produces a record but zero recipients', async () => {
@@ -170,25 +170,25 @@ describe('CheckInService.submit — guards & edge cases', () => {
   });
 });
 
-describe('CheckInService.radar', () => {
+describe('CheckInService.sper', () => {
   it('shows one entry per member, latest non-expired state', async () => {
     const { circle, users: [a, b] } = await makeCircleWith(['A', 'B']);
     const { service } = serviceWithSpy();
     await service.submit({ userId: a!.id, circleId: circle.id, ...calm, emotional_state: 'Heavy' });
 
-    const radar = await service.radar(circle.id, b!.id);
-    expect(radar).toHaveLength(2);
-    const aEntry = radar.find((r) => r.user_id === a!.id);
+    const sper = await service.sper(circle.id, b!.id);
+    expect(sper).toHaveLength(2);
+    const aEntry = sper.find((r) => r.user_id === a!.id);
     expect(aEntry?.emotional_state).toBe('Heavy');
-    const bEntry = radar.find((r) => r.user_id === b!.id);
+    const bEntry = sper.find((r) => r.user_id === b!.id);
     expect(bEntry?.checkin_id).toBeNull(); // B never checked in
   });
 
-  it('rejects radar access for a non-member', async () => {
+  it('rejects sper access for a non-member', async () => {
     const { circle } = await makeCircleWith(['A']);
     const outsider = await makeUser('Outsider');
     const { service } = serviceWithSpy();
-    await expect(service.radar(circle.id, outsider.id)).rejects.toMatchObject({
+    await expect(service.sper(circle.id, outsider.id)).rejects.toMatchObject({
       code: 'FORBIDDEN',
     });
   });

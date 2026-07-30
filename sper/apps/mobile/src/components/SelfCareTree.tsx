@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { isDistress, type RadarEntryDTO } from '@sper/shared-types';
+import { isDistress, type SperEntryDTO } from '@sper/shared-types';
 import { Tree } from './Tree';
 import { Touchable } from './Touchable';
 import { useSendGratitude } from '../api/hooks';
@@ -21,7 +21,7 @@ const THANKED_KEY_PREFIX = 'sper.thankedCount.';
  * tree, only your circle can. Once someone has reached out, "Thank you!" lets
  * you send gratitude their way; repeatable, since more people may respond later.
  */
-export function SelfCareTree({ entry, count }: { entry: RadarEntryDTO; count: number }) {
+export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: number }) {
   const { activeCircleId } = useSession();
   const agg = aggregateState(entry);
   const distressed = agg ? isDistress(agg) : false;

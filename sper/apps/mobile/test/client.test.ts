@@ -40,8 +40,8 @@ describe('api.login', () => {
 describe('authenticated requests', () => {
   it('attaches the bearer token', async () => {
     stores.secureMem.set('sper.access', 'my-token');
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { radar: [] }));
-    await api.radar('c1');
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { sper: [] }));
+    await api.sper('c1');
     const headers = fetchMock.mock.calls[0]![1].headers as Record<string, string>;
     expect(headers.authorization).toBe('Bearer my-token');
   });
@@ -51,11 +51,11 @@ describe('authenticated requests', () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(403, { error: { code: 'FORBIDDEN', message: 'nope' } }),
     );
-    await expect(api.radar('c1')).rejects.toBeInstanceOf(ApiError);
+    await expect(api.sper('c1')).rejects.toBeInstanceOf(ApiError);
     fetchMock.mockResolvedValueOnce(
       jsonResponse(403, { error: { code: 'FORBIDDEN', message: 'nope' } }),
     );
-    await api.radar('c1').catch((e: ApiError) => {
+    await api.sper('c1').catch((e: ApiError) => {
       expect(e.status).toBe(403);
       expect(e.code).toBe('FORBIDDEN');
     });
@@ -77,10 +77,10 @@ describe('401 auto-refresh', () => {
         }),
       )
       // 3) retried original -> 200
-      .mockResolvedValueOnce(jsonResponse(200, { radar: [{ user_id: 'u1' }] }));
+      .mockResolvedValueOnce(jsonResponse(200, { sper: [{ user_id: 'u1' }] }));
 
-    const radar = await api.radar('c1');
-    expect(radar).toHaveLength(1);
+    const sper = await api.sper('c1');
+    expect(sper).toHaveLength(1);
     expect(stores.secureMem.get('sper.access')).toBe('fresh');
     // original + refresh + retry = 3 fetches
     expect(fetchMock).toHaveBeenCalledTimes(3);
@@ -93,7 +93,7 @@ describe('401 auto-refresh', () => {
       .mockResolvedValueOnce(jsonResponse(401, { error: { code: 'UNAUTHORIZED', message: 'x' } }))
       .mockResolvedValueOnce(jsonResponse(401, { error: { code: 'UNAUTHORIZED', message: 'x' } }));
 
-    await expect(api.radar('c1')).rejects.toBeInstanceOf(ApiError);
+    await expect(api.sper('c1')).rejects.toBeInstanceOf(ApiError);
     expect(stores.secureMem.get('sper.access')).toBeUndefined();
   });
 });

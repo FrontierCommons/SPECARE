@@ -160,8 +160,8 @@ export interface SubmitCheckInResponse {
   notification?: CircleNotificationDTO;
 }
 
-/** One radar entry per member: their latest non-expired state. */
-export interface RadarEntryDTO {
+/** One sper entry per member: their latest non-expired state. */
+export interface SperEntryDTO {
   user_id: UUID;
   name: string;
   avatar_url: string | null;

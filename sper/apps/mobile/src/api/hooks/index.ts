@@ -7,17 +7,17 @@ import type {
 } from '@sper/shared-types';
 
 export const keys = {
-  radar: (circleId: string) => ['radar', circleId] as const,
+  sper: (circleId: string) => ['sper', circleId] as const,
   careCards: (circleId: string) => ['careCards', circleId] as const,
   members: (circleId: string) => ['members', circleId] as const,
   touchpoints: (checkinId: string) => ['touchpoints', checkinId] as const,
   me: ['me'] as const,
 };
 
-export function useRadar(circleId: string) {
+export function useSper(circleId: string) {
   return useQuery({
-    queryKey: keys.radar(circleId),
-    queryFn: () => api.radar(circleId),
+    queryKey: keys.sper(circleId),
+    queryFn: () => api.sper(circleId),
     enabled: !!circleId,
     staleTime: 30_000,
   });
@@ -56,7 +56,7 @@ export function useSubmitCheckIn(circleId: string) {
   return useMutation({
     mutationFn: (input: SubmitCheckInRequest) => api.submitCheckIn(input),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.radar(circleId) });
+      qc.invalidateQueries({ queryKey: keys.sper(circleId) });
       qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
     },
   });

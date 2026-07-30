@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
-import type { RadarEntryDTO, TouchpointType } from '@sper/shared-types';
-import { useRadar, useCareCards, useLogTouchpoint, useTouchpoints } from '../api/hooks';
+import type { SperEntryDTO, TouchpointType } from '@sper/shared-types';
+import { useSper, useCareCards, useLogTouchpoint, useTouchpoints } from '../api/hooks';
 import { useSession } from '../state/session';
-import { RadarWidget } from '../components/RadarWidget';
+import { SperWidget } from '../components/SperWidget';
 import { CareCard } from '../components/CareCard';
 import { SelfCareTree } from '../components/SelfCareTree';
 import { MemberDetailSheet } from '../components/MemberDetailSheet';
@@ -14,13 +14,13 @@ import { reachedNames } from '../lib/touchpoints';
 import { color, elevation, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
-export function RadarDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
+export function SperDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
   const { activeCircleId, user, circles } = useSession();
   const circleId = activeCircleId!;
   const circleName = circles.find((c) => c.circle_id === circleId)?.name;
-  const radar = useRadar(circleId);
+  const sper = useSper(circleId);
   const care = useCareCards(circleId);
-  const [selected, setSelected] = useState<RadarEntryDTO | null>(null);
+  const [selected, setSelected] = useState<SperEntryDTO | null>(null);
 
   const [prayerToastVisible, setPrayerToastVisible] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,15 +33,15 @@ export function RadarDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
-  const refreshing = radar.isFetching || care.isFetching;
+  const refreshing = sper.isFetching || care.isFetching;
   const onRefresh = () => {
-    radar.refetch();
+    sper.refetch();
     care.refetch();
   };
 
   const myEntry = useMemo(
-    () => radar.data?.find((e) => e.user_id === user?.id) ?? null,
-    [radar.data, user],
+    () => sper.data?.find((e) => e.user_id === user?.id) ?? null,
+    [sper.data, user],
   );
 
   const selectedCard = useMemo(
@@ -59,24 +59,24 @@ export function RadarDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
 
       {/* The one-time "they're grateful for your care" message leads the
           screen — it's the warmest thing here and shouldn't get buried
-          below the radar and everyone else's cards. */}
+          below the sper and everyone else's cards. */}
       {care.data
         ?.filter((card) => card.target_user_id !== user?.id && card.gratitude_shown)
         .map((card) => (
           <CareCardWithLog key={card.checkin_id} circleId={circleId} card={card} />
         ))}
 
-      <Text style={styles.title}>{strings.radar.title}</Text>
+      <Text style={styles.title}>{strings.sper.title}</Text>
       {circleName ? <Text style={styles.circleName}>{circleName}</Text> : null}
 
       {myEntry?.checkin_id ? (
         <MyTree entry={myEntry} onPrayed={flashPrayerToast} />
       ) : null}
 
-      {radar.data && radar.data.length > 0 ? (
-        <RadarWidget entries={radar.data} onSelect={setSelected} />
+      {sper.data && sper.data.length > 0 ? (
+        <SperWidget entries={sper.data} onSelect={setSelected} />
       ) : (
-        <Text style={styles.empty}>{strings.radar.empty}</Text>
+        <Text style={styles.empty}>{strings.sper.empty}</Text>
       )}
 
       {care.data
@@ -90,7 +90,7 @@ export function RadarDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
         ))}
 
       <Touchable style={styles.cta} onPress={onCheckIn} accessibilityRole="button">
-        <Text style={styles.ctaText}>{strings.radar.checkInCta}</Text>
+        <Text style={styles.ctaText}>{strings.sper.checkInCta}</Text>
       </Touchable>
 
       <MemberDetailSheetWithLog
@@ -105,7 +105,7 @@ export function RadarDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
   );
 }
 
-function MyTree({ entry, onPrayed }: { entry: RadarEntryDTO; onPrayed: () => void }) {
+function MyTree({ entry, onPrayed }: { entry: SperEntryDTO; onPrayed: () => void }) {
   const touchpoints = useTouchpoints(entry.checkin_id!);
   useNewPrayerAlert(touchpoints.data, onPrayed);
   return <SelfCareTree entry={entry} count={touchpoints.data?.length ?? 0} />;
@@ -134,7 +134,7 @@ function MemberDetailSheetWithLog({
   onClose,
 }: {
   circleId: string;
-  entry: RadarEntryDTO | null;
+  entry: SperEntryDTO | null;
   careCard?: import('@sper/shared-types').CareCardDTO;
   isSelf: boolean;
   onPrayed: () => void;
@@ -175,4 +175,4 @@ const styles = StyleSheet.create({
   ctaText: { ...type.label, color: color.bg, fontWeight: '600' },
 });
 
-export default RadarDashboardScreen;
+export default SperDashboardScreen;

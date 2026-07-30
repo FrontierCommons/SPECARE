@@ -36,10 +36,10 @@ export async function checkinRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(201).send(result);
   });
 
-  app.get('/circles/:id/radar', async (req, reply) => {
+  app.get('/circles/:id/sper', async (req, reply) => {
     const { id } = idParam.parse(req.params);
-    const radar = await checkInService.radar(id, currentUserId(req));
-    return reply.code(200).send({ radar });
+    const sper = await checkInService.sper(id, currentUserId(req));
+    return reply.code(200).send({ sper });
   });
 
   app.get('/circles/:id/care-cards', async (req, reply) => {

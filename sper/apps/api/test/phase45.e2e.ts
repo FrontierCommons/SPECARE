@@ -115,8 +115,8 @@ async function main() {
     headers: { authorization: `Bearer ${friendToken}` },
   });
 
-  // ---- Check-in + radar + care ----
-  console.log('\n[4] Distress check-in -> notification, radar, care-cards');
+  // ---- Check-in + sper + care ----
+  console.log('\n[4] Distress check-in -> notification, sper, care-cards');
   res = await app.inject({
     method: 'POST',
     url: '/api/v1/checkins',
@@ -138,12 +138,12 @@ async function main() {
 
   res = await app.inject({
     method: 'GET',
-    url: `/api/v1/circles/${circleId}/radar`,
+    url: `/api/v1/circles/${circleId}/sper`,
     headers: { authorization: `Bearer ${friendToken}` },
   });
-  const radar = res.json().radar;
-  assert(res.statusCode === 200 && radar.length === 2, 'radar shows 2 members');
-  assert(radar.find((r: any) => r.user_id === ownerId)?.emotional_state === 'In the Pit', 'radar reflects distress');
+  const sper = res.json().sper;
+  assert(res.statusCode === 200 && sper.length === 2, 'sper shows 2 members');
+  assert(sper.find((r: any) => r.user_id === ownerId)?.emotional_state === 'In the Pit', 'sper reflects distress');
 
   res = await app.inject({
     method: 'GET',

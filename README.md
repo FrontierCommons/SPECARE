@@ -16,7 +16,7 @@ apps/api            Backend (Fastify, Drizzle, BullMQ)
 apps/mobile         React Native / Expo client
   src/design        tokens (palette, state visuals) + strings (voice)
   src/api           typed client + TanStack Query hooks
-  src/components     StateBadge, RadarWidget, CareCard, GraceNudgeBanner, ...
+  src/components     StateBadge, SperWidget, CareCard, GraceNudgeBanner, ...
   src/screens        auth, onboarding (timezone/join/pact), 3 main destinations
   src/navigation     RootNavigator, OnboardingStack, MainSwitcher
   src/lib            deeplink (WhatsApp/SMS bridge), offlineQueue
@@ -60,7 +60,7 @@ pnpm --filter @sper/api worker    # prompt-scheduler + grace-loop (separate proc
 - `POST /auth/register|login|magic-link|magic-link/verify|refresh`
 - `POST /circles`, `POST /circles/join`, `POST /circles/:id/invites`,
   `POST /circles/:id/pact/agree`, `GET /circles/:id/members`, `POST /circles/:id/leave`
-- `POST /checkins`, `GET /circles/:id/radar`, `GET /circles/:id/care-cards`
+- `POST /checkins`, `GET /circles/:id/sper`, `GET /circles/:id/care-cards`
 - `POST /checkins/:id/touchpoints`, `GET /checkins/:id/touchpoints`
 - `POST /devices`
 
@@ -92,7 +92,7 @@ pnpm --filter @sper/mobile test
 ```
 
 Coverage: check-in core loop (distress detection, un-pause, atomicity, note
-boundary, lone-member), radar/care-cards, multi-responder touchpoints + ack
+boundary, lone-member), sper/care-cards, multi-responder touchpoints + ack
 routing, notifier push/email fallback + idempotency + dead-token pruning,
 circles/invites/pact (single-use codes, expiry, duplicate-join, unambiguous
 alphabet), auth (hashing, dup email, refresh rotation, magic link), workers

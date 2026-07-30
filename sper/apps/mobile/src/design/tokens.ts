@@ -1,7 +1,7 @@
 /**
  * SPER design tokens. Palette is warm and quiet by intent: nothing here should
  * feel like a dashboard or a game. State colors read as weather (clear → storm)
- * to fit the Radar metaphor, deliberately NOT a green-to-red performance ramp.
+ * to fit the Sper metaphor, deliberately NOT a green-to-red performance ramp.
  */
 
 import { Easing } from 'react-native';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { RadarDashboardScreen } from '../screens/RadarDashboardScreen';
+import { SperDashboardScreen } from '../screens/SperDashboardScreen';
 import { CheckInSheetScreen } from '../screens/CheckInSheetScreen';
 import { MyCircleScreen } from '../screens/MyCircleScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -28,7 +28,7 @@ export function MainSwitcher() {
           <MyCircleScreen onBack={() => setDest('today')} onLeft={() => setDest('today')} />
         )}
         {dest === 'settings' && <SettingsScreen />}
-        {dest === 'today' && <RadarDashboardScreen onCheckIn={() => setDest('checkin')} />}
+        {dest === 'today' && <SperDashboardScreen onCheckIn={() => setDest('checkin')} />}
       </View>
       <TabBar active={dest} onChange={setDest} />
     </View>

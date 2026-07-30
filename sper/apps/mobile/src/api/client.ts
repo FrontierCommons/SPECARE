@@ -10,7 +10,7 @@ import type {
   MyCircleDTO,
   SubmitCheckInRequest,
   SubmitCheckInResponse,
-  RadarEntryDTO,
+  SperEntryDTO,
   CareCardDTO,
   TouchpointDTO,
   LogTouchpointRequest,
@@ -171,8 +171,8 @@ export const api = {
   // Check-ins
   submitCheckIn: (input: SubmitCheckInRequest) =>
     raw<SubmitCheckInResponse>('/checkins', { method: 'POST', body: input }),
-  radar: (circleId: string) =>
-    raw<{ radar: RadarEntryDTO[] }>(`/circles/${circleId}/radar`).then((r) => r.radar),
+  sper: (circleId: string) =>
+    raw<{ sper: SperEntryDTO[] }>(`/circles/${circleId}/sper`).then((r) => r.sper),
   careCards: (circleId: string) =>
     raw<{ care_cards: CareCardDTO[] }>(`/circles/${circleId}/care-cards`).then((r) => r.care_cards),
 

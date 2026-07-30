@@ -14,7 +14,7 @@ import {
   CHECKIN_DIMENSIONS,
   type StateLevel,
   type SubmitCheckInResponse,
-  type RadarEntryDTO,
+  type SperEntryDTO,
   type CareCardDTO,
 } from '@sper/shared-types';
 
@@ -114,11 +114,11 @@ export class CheckInService {
     return response;
   }
 
-  /** Current radar for a circle. Caller-membership enforced at the HTTP layer. */
-  async radar(circleId: string, callerId: string): Promise<RadarEntryDTO[]> {
+  /** Current sper for a circle. Caller-membership enforced at the HTTP layer. */
+  async sper(circleId: string, callerId: string): Promise<SperEntryDTO[]> {
     const isMember = await this.repo.isMember(this.database, circleId, callerId);
     if (!isMember) throw new ForbiddenError('Not a member of this circle');
-    return this.repo.radar(this.database, circleId);
+    return this.repo.sper(this.database, circleId);
   }
 
   /** Active Care Cards for the circle. Caller must be a member. */

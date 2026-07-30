@@ -6,7 +6,7 @@ import { deviceRepo } from '../modules/users/devices.repo';
 import { pushProvider, type PushProvider } from '../delivery/push.provider';
 import type { CheckInFrequency } from '@sper/shared-types';
 
-/** Local hour (24h) at which the daily Radar prompt should fire. */
+/** Local hour (24h) at which the daily Sper prompt should fire. */
 export const PROMPT_LOCAL_HOUR = 9;
 
 /** Local hours the prompt fires at, per user-chosen frequency. */
@@ -23,7 +23,7 @@ export interface PromptSender {
 /**
  * Core scheduler logic, decoupled from BullMQ. Intended to run hourly.
  * For each non-paused user whose LOCAL time matches one of the hours for
- * their chosen check-in frequency, send the Radar prompt. Timezone
+ * their chosen check-in frequency, send the Sper prompt. Timezone
  * correctness per user (NFR). Returns the number of prompts sent.
  */
 export async function runPromptScheduler(
@@ -62,9 +62,9 @@ export class DevicePromptSender implements PromptSender {
       await this.push.send({
         token: t.token,
         platform: t.platform as 'ios' | 'android',
-        title: 'Time for your 15-second Radar update',
+        title: 'Time for your 15-second Sper update',
         body: 'A quick check-in with your circle. Tap to begin.',
-        data: { type: 'radar_prompt' },
+        data: { type: 'sper_prompt' },
       });
     }
   }

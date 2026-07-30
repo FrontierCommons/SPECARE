@@ -9,7 +9,7 @@ import {
   type CheckInRow,
   type NewCheckInRow,
 } from '../../db/schema';
-import { isDistress, type CareCardDTO, type RadarEntryDTO, type StateLevel } from '@sper/shared-types';
+import { isDistress, type CareCardDTO, type SperEntryDTO, type StateLevel } from '@sper/shared-types';
 
 type Executor = DB | Parameters<Parameters<DB['transaction']>[0]>[0];
 
@@ -55,10 +55,10 @@ export class CheckInRepo {
   }
 
   /**
-   * Radar: for each member, their most recent NON-EXPIRED check-in.
+   * Sper: for each member, their most recent NON-EXPIRED check-in.
    * Members with no active check-in appear with null states.
    */
-  async radar(exec: Executor, circleId: string): Promise<RadarEntryDTO[]> {
+  async sper(exec: Executor, circleId: string): Promise<SperEntryDTO[]> {
     const members = await exec
       .select({ userId: circleMemberships.userId, name: users.name, avatarUrl: users.avatarUrl })
       .from(circleMemberships)
@@ -88,7 +88,7 @@ export class CheckInRepo {
       if (!latest.has(c.userId)) latest.set(c.userId, c);
     }
 
-    return members.map(({ userId, name, avatarUrl }): RadarEntryDTO => {
+    return members.map(({ userId, name, avatarUrl }): SperEntryDTO => {
       const c = latest.get(userId);
       if (!c) {
         return {

@@ -126,11 +126,11 @@ async function main() {
   }
   assert(blocked, 'check-in blocked before pact agreed');
 
-  console.log('\n[5] Radar: latest non-expired per member');
-  const radar = await checkins.radar(circle.id, maya.id);
-  const mayaEntry = radar.find((r) => r.user_id === maya.id);
-  assert(mayaEntry?.emotional_state === 'Heavy', 'radar shows Maya latest = Heavy');
-  assert(radar.length === 4, 'radar has one entry per member (4)');
+  console.log('\n[5] Sper: latest non-expired per member');
+  const sper = await checkins.sper(circle.id, maya.id);
+  const mayaEntry = sper.find((r) => r.user_id === maya.id);
+  assert(mayaEntry?.emotional_state === 'Heavy', 'sper shows Maya latest = Heavy');
+  assert(sper.length === 4, 'sper has one entry per member (4)');
 
   console.log('\n[6] Multi-responder touchpoints + quiet ack');
   const acks: string[] = [];

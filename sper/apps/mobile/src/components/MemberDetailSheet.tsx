@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, Text, Pressable, ScrollView, Modal, StyleSheet } from 'react-native';
-import type { CareCardDTO, RadarEntryDTO, TouchpointType } from '@sper/shared-types';
+import type { CareCardDTO, SperEntryDTO, TouchpointType } from '@sper/shared-types';
 import { Avatar } from './Avatar';
 import { CareCard } from './CareCard';
 import { SelfCareTree } from './SelfCareTree';
@@ -12,7 +12,7 @@ import { color, elevation, motion, radius, space, type } from '../design/tokens'
 import { strings } from '../design/strings';
 
 interface Props {
-  entry: RadarEntryDTO | null;
+  entry: SperEntryDTO | null;
   careCard?: CareCardDTO;
   /** True when the viewer is looking at their own check-in. */
   isSelf?: boolean;

@@ -4,9 +4,9 @@ import {
   STATE_LEVELS,
   type StateLevel,
   type CheckInDimension,
-  type RadarEntryDTO,
+  type SperEntryDTO,
 } from '@sper/shared-types';
-import { useRadar, useSubmitCheckIn } from '../api/hooks';
+import { useSper, useSubmitCheckIn } from '../api/hooks';
 import { useSession } from '../state/session';
 import { Touchable } from '../components/Touchable';
 import { ChatBubble } from '../components/ChatBubble';
@@ -40,7 +40,7 @@ export function CheckInSheetScreen({
 }) {
   const { activeCircleId, user } = useSession();
   const circleId = activeCircleId!;
-  const radar = useRadar(circleId);
+  const sper = useSper(circleId);
   const submit = useSubmitCheckIn(circleId);
   const [sel, setSel] = useState<Selections>({});
   const [step, setStep] = useState(0);
@@ -49,12 +49,12 @@ export function CheckInSheetScreen({
   const scrollRef = useRef<ScrollView>(null);
 
   const myEntry = useMemo(
-    () => radar.data?.find((e) => e.user_id === user?.id) ?? null,
-    [radar.data, user],
+    () => sper.data?.find((e) => e.user_id === user?.id) ?? null,
+    [sper.data, user],
   );
   const hasResult = !!myEntry?.checkin_id;
 
-  if (radar.isLoading) {
+  if (sper.isLoading) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator color={color.sage} />
@@ -221,7 +221,7 @@ function ResultView({
   onUpdate,
   onOpenSettings,
 }: {
-  entry: RadarEntryDTO;
+  entry: SperEntryDTO;
   onUpdate: () => void;
   onOpenSettings: () => void;
 }) {
