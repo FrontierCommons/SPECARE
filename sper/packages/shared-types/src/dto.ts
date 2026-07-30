@@ -1,0 +1,225 @@
+import type { StateLevel, TouchpointType, DevicePlatform, CheckInFrequency } from './states';
+
+/**
+ * Data Transfer Objects shared between API and mobile client.
+ * Wire-format contracts only — no DB internals, no password hashes.
+ */
+
+/* ----------------------------- Primitives ----------------------------- */
+
+export type UUID = string;
+export type ISODateTime = string; // UTC, ISO-8601
+
+/* ------------------------------- Auth --------------------------------- */
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token: string;
+  /** Access-token lifetime in seconds. */
+  expires_in: number;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  timezone: string; // IANA, e.g. "America/New_York"
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface MagicLinkRequest {
+  email: string;
+}
+
+export interface MagicLinkVerifyRequest {
+  token: string;
+}
+
+export interface RefreshRequest {
+  refresh_token: string;
+}
+
+export interface RequestPasswordResetRequest {
+  email: string;
+}
+
+export interface ConfirmPasswordResetRequest {
+  token: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: UserDTO;
+  tokens: AuthTokens;
+}
+
+/* ------------------------------- Users -------------------------------- */
+
+export interface UserDTO {
+  id: UUID;
+  name: string;
+  email: string;
+  timezone: string;
+  avatar_url: string | null;
+  notifications_paused: boolean;
+  checkin_frequency: CheckInFrequency;
+  last_checkin_at: ISODateTime | null;
+  created_at: ISODateTime;
+}
+
+export interface RegisterDeviceRequest {
+  token: string; // APNs/FCM device token
+  platform: DevicePlatform;
+}
+
+export interface UpdateProfileRequest {
+  notifications_paused?: boolean;
+  timezone?: string;
+  checkin_frequency?: CheckInFrequency;
+}
+
+/* ------------------------------ Circles ------------------------------- */
+
+export interface CreateCircleRequest {
+  name: string;
+}
+
+export interface JoinCircleRequest {
+  code?: string; // 6-char invite code
+  invite_token?: string; // magic invite link token
+}
+
+export interface CreateInviteRequest {
+  email?: string;
+}
+
+export interface InviteResponse {
+  code: string;
+  invite_link: string;
+  expires_at: ISODateTime;
+}
+
+export interface CircleDTO {
+  id: UUID;
+  name: string;
+  created_at: ISODateTime;
+}
+
+/** One row per circle the caller belongs to — used to resume a returning
+ * member straight into their circle (or the pact, if unfinished) instead of
+ * re-running onboarding. */
+export interface MyCircleDTO {
+  circle_id: UUID;
+  name: string;
+  covenant_agreed: boolean;
+  joined_at: ISODateTime;
+}
+
+export interface CircleMemberDTO {
+  user_id: UUID;
+  name: string;
+  timezone: string;
+  avatar_url: string | null;
+  covenant_agreed: boolean;
+  joined_at: ISODateTime;
+}
+
+/* ------------------------------ Check-ins ----------------------------- */
+
+export interface SubmitCheckInRequest {
+  circle_id: UUID;
+  spiritual_state: StateLevel;
+  physical_state: StateLevel;
+  emotional_state: StateLevel;
+  vocational_state: StateLevel;
+  relational_state: StateLevel;
+  optional_note?: string; // <= 140 chars
+}
+
+export interface CheckInDTO {
+  id: UUID;
+  user_id: UUID;
+  circle_id: UUID;
+  spiritual_state: StateLevel;
+  physical_state: StateLevel;
+  emotional_state: StateLevel;
+  vocational_state: StateLevel;
+  relational_state: StateLevel;
+  optional_note: string | null;
+  created_at: ISODateTime;
+  expires_at: ISODateTime;
+}
+
+export interface SubmitCheckInResponse {
+  checkin: CheckInDTO;
+  /** Present only when the check-in flagged Heavy / In the Pit. */
+  notification?: CircleNotificationDTO;
+}
+
+/** One radar entry per member: their latest non-expired state. */
+export interface RadarEntryDTO {
+  user_id: UUID;
+  name: string;
+  avatar_url: string | null;
+  checkin_id: UUID | null;
+  spiritual_state: StateLevel | null;
+  physical_state: StateLevel | null;
+  emotional_state: StateLevel | null;
+  vocational_state: StateLevel | null;
+  relational_state: StateLevel | null;
+  created_at: ISODateTime | null;
+}
+
+/* --------------------------- Notifications ---------------------------- */
+
+export interface CircleNotificationDTO {
+  id: UUID;
+  checkin_id: UUID;
+  target_user_id: UUID;
+  circle_id: UUID;
+  verse: string | null;
+  created_at: ISODateTime;
+}
+
+/** Care Card shown to responders. No assignment — visible to all members. */
+export interface CareCardDTO {
+  checkin_id: UUID;
+  target_user_id: UUID;
+  target_name: string;
+  flagged_dimensions: string[]; // e.g. ["emotional", "spiritual"]
+  optional_note: string | null;
+  verse: string | null;
+  created_at: ISODateTime;
+  /** True exactly once: this is the caller's first fetch since being thanked. */
+  gratitude_shown?: boolean;
+  /** True for the rest of this check-in's life once the caller has ever been thanked. */
+  gratitude_received?: boolean;
+}
+
+/* ---------------------------- Touchpoints ----------------------------- */
+
+export interface LogTouchpointRequest {
+  type: TouchpointType;
+}
+
+export interface TouchpointDTO {
+  id: UUID;
+  checkin_id: UUID;
+  responder_id: UUID;
+  responder_name: string;
+  type: TouchpointType;
+  created_at: ISODateTime;
+}
+
+/* ------------------------------ Errors -------------------------------- */
+
+export interface ApiError {
+  error: {
+    code: string;
+    message: string;
+  };
+}

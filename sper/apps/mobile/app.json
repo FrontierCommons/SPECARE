@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "SPER",
+    "slug": "sper",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "sper",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1C2024"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.sper.mobile"
+    },
+    "android": {
+      "package": "app.sper.mobile"
+    },
+    "plugins": ["expo-secure-store", "expo-localization"]
+  }
+}
