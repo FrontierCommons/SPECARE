@@ -123,11 +123,3 @@ launches it via the currently-booted AVD. If you have multiple emulators
 running, target one explicitly with `ANDROID_SERIAL=<serial> pnpm android`
 (find serials with `adb devices`).
 
-## Notes
-- **Push/email are real** (APNs via `@parse/node-apn`, FCM via `firebase-admin`,
-  SMTP via `nodemailer`). Each degrades to log-only when its credentials are
-  absent, so the whole delivery path runs in dev without secrets. Configure via
-  the `APNS_*`, `FCM_*`, and `SMTP_*` env vars (see `.env.example`).
-- The mobile client is a complete Expo app: auth, onboarding + pact gate, the
-  three tab-less destinations, the off-app messaging bridge, and an offline
-  check-in queue.
