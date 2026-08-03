@@ -69,6 +69,7 @@ export const strings = {
     title: 'Your circle',
     empty: 'No check-ins yet today. Yours can be the first.',
     checkInCta: 'Wanna update your SPER?',
+    nextCheckIn: (t: string) => `Next check-in in ${t}`,
     quietFor: (name: string) => `${name} has been quiet for a bit`,
   },
 
@@ -125,6 +126,19 @@ export const strings = {
       n === 1 ? 'Someone has watered your tree today.' : `${n} people have watered your tree today.`,
     encouragement: 'Someone already cares for you!',
     prayerToast: 'Someone just prayed for you.',
+    recordTapToStart: 'Tap to record',
+    recording: 'Recording…',
+    recordStop: 'Stop',
+    recordPlayback: 'Tap play to listen back',
+    recordSend: 'Send',
+    recordRerecord: 'Re-record',
+    recordCancel: 'Cancel',
+    recordSending: 'Sending…',
+    recordMicDenied: 'SPER needs microphone access to record a voice note.',
+    voiceNoteFrom: (name: string) => `${name} sent you a voice note`,
+    voiceNotePlay: 'Play',
+    voiceNotePause: 'Pause',
+    voiceNoteReceived: 'Received',
   },
 
   member: {

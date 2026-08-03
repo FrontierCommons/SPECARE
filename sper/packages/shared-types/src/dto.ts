@@ -215,6 +215,28 @@ export interface TouchpointDTO {
   created_at: ISODateTime;
 }
 
+/* ---------------------------- Voice notes ------------------------------ */
+
+export interface SendVoiceNoteRequest {
+  audio_base64: string;
+  mime_type: string;
+  duration_ms: number; // <= 30_000
+}
+
+/** Only ever returned to the check-in's own author, and only while pending
+ * (not yet acknowledged) — this is why it carries the audio payload inline
+ * instead of a separate fetch-by-id step. */
+export interface VoiceNoteDTO {
+  id: UUID;
+  checkin_id: UUID;
+  sender_id: UUID;
+  sender_name: string;
+  audio_base64: string;
+  mime_type: string;
+  duration_ms: number;
+  created_at: ISODateTime;
+}
+
 /* ------------------------------ Errors -------------------------------- */
 
 export interface ApiError {

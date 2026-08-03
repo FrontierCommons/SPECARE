@@ -6,6 +6,7 @@ import { authRoutes } from './modules/auth/auth.routes';
 import { circleRoutes } from './modules/circles/circles.routes';
 import { checkinRoutes } from './modules/checkins/checkins.routes';
 import { touchpointRoutes } from './modules/touchpoints/touchpoints.routes';
+import { voiceNoteRoutes } from './modules/voicenotes/voicenotes.routes';
 import { gratitudeRoutes } from './modules/gratitude/gratitude.routes';
 import { userRoutes } from './modules/users/users.routes';
 
@@ -16,7 +17,9 @@ import { userRoutes } from './modules/users/users.routes';
 export async function buildApp(): Promise<FastifyInstance> {
   wireDelivery();
 
-  const app = Fastify({ logger: true });
+  // Default 1MB body limit is too small for base64-encoded voice-note
+  // uploads (a 30s clip comfortably fits under a few MB once encoded).
+  const app = Fastify({ logger: true, bodyLimit: 5 * 1024 * 1024 });
   await app.register(cors, { origin: true });
   app.setErrorHandler(errorHandler);
 
@@ -28,6 +31,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await api.register(circleRoutes);
       await api.register(checkinRoutes);
       await api.register(touchpointRoutes);
+      await api.register(voiceNoteRoutes);
       await api.register(gratitudeRoutes);
       await api.register(userRoutes);
     },

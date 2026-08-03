@@ -9,7 +9,16 @@ import { color, motion, radius, space, type } from '../design/tokens';
  * component instance when it's added to the transcript, so a mount-time
  * entrance is enough to animate every new message as it arrives.
  */
-export function ChatBubble({ from, text }: { from: 'bot' | 'user'; text: string }) {
+export function ChatBubble({
+  from,
+  text,
+  bubbleColor,
+}: {
+  from: 'bot' | 'user';
+  text: string;
+  /** Overrides the default bubble background — used to echo the state color of a user's answer. */
+  bubbleColor?: string;
+}) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(6)).current;
 
@@ -32,7 +41,13 @@ export function ChatBubble({ from, text }: { from: 'bot' | 'user'; text: string 
     <Animated.View
       style={[styles.row, from === 'user' && styles.rowUser, { opacity, transform: [{ translateY }] }]}
     >
-      <View style={[styles.bubble, from === 'bot' ? styles.bot : styles.user]}>
+      <View
+        style={[
+          styles.bubble,
+          from === 'bot' ? styles.bot : styles.user,
+          from === 'user' && bubbleColor ? { backgroundColor: bubbleColor } : null,
+        ]}
+      >
         <Text style={[styles.text, from === 'user' && styles.userText]}>{text}</Text>
       </View>
     </Animated.View>

@@ -1,5 +1,6 @@
 import { circleNotificationService } from '../modules/notifications/circle-notification.service';
 import { touchpointService } from '../modules/touchpoints/touchpoints.service';
+import { voiceNoteService } from '../modules/voicenotes/voicenotes.service';
 import { circleService } from '../modules/circles/circles.service';
 import { notifierService } from './notifier.service';
 
@@ -15,6 +16,7 @@ export function wireDelivery(): void {
   if (wired) return;
   circleNotificationService.setDispatcher(notifierService);
   touchpointService.setAckDispatcher(notifierService);
+  voiceNoteService.setDispatcher(notifierService);
   circleService.setEventDispatcher(notifierService);
   wired = true;
 }

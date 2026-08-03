@@ -1,12 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import type { SperEntryDTO, TouchpointType } from '@sper/shared-types';
-import { useSper, useCareCards, useLogTouchpoint, useTouchpoints } from '../api/hooks';
+import {
+  useSper,
+  useCareCards,
+  useLogTouchpoint,
+  useTouchpoints,
+  useVoiceNotes,
+  useSendVoiceNote,
+  useMarkVoiceNoteReceived,
+} from '../api/hooks';
 import { useSession } from '../state/session';
 import { SperWidget } from '../components/SperWidget';
 import { CareCard } from '../components/CareCard';
 import { SelfCareTree } from '../components/SelfCareTree';
+import { NextCheckInCountdown } from '../components/NextCheckInCountdown';
 import { MemberDetailSheet } from '../components/MemberDetailSheet';
+import { VoiceNoteBanner } from '../components/VoiceNoteBanner';
 import { Touchable } from '../components/Touchable';
 import { Toast } from '../components/Toast';
 import { useNewPrayerAlert } from '../lib/useNewPrayerAlert';
@@ -69,15 +79,18 @@ export function SperDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
       <Text style={styles.title}>{strings.sper.title}</Text>
       {circleName ? <Text style={styles.circleName}>{circleName}</Text> : null}
 
-      {myEntry?.checkin_id ? (
-        <MyTree entry={myEntry} onPrayed={flashPrayerToast} />
-      ) : null}
-
       {sper.data && sper.data.length > 0 ? (
-        <SperWidget entries={sper.data} onSelect={setSelected} />
+        <SperWidget entries={sper.data} currentUserId={user?.id} onSelect={setSelected} />
       ) : (
         <Text style={styles.empty}>{strings.sper.empty}</Text>
       )}
+
+      {myEntry?.checkin_id ? (
+        <>
+          <MyVoiceNotes checkinId={myEntry.checkin_id} />
+          <MyTree entry={myEntry} onPrayed={flashPrayerToast} />
+        </>
+      ) : null}
 
       {care.data
         ?.filter((card) => card.target_user_id !== user?.id)
@@ -88,6 +101,10 @@ export function SperDashboardScreen({ onCheckIn }: { onCheckIn: () => void }) {
         .map((card) => (
           <CareCardWithLog key={card.checkin_id} circleId={circleId} card={card} />
         ))}
+
+      {myEntry?.checkin_id && myEntry.created_at && user ? (
+        <NextCheckInCountdown lastCheckInAt={myEntry.created_at} frequency={user.checkin_frequency} />
+      ) : null}
 
       <Touchable style={styles.cta} onPress={onCheckIn} accessibilityRole="button">
         <Text style={styles.ctaText}>{strings.sper.checkInCta}</Text>
@@ -111,15 +128,45 @@ function MyTree({ entry, onPrayed }: { entry: SperEntryDTO; onPrayed: () => void
   return <SelfCareTree entry={entry} count={touchpoints.data?.length ?? 0} />;
 }
 
+/** Any voice notes waiting on the viewer's own check-in — the recording
+ * disappears from here for good once they tap Received. */
+function MyVoiceNotes({ checkinId }: { checkinId: string }) {
+  const voiceNotes = useVoiceNotes(checkinId);
+  const markReceived = useMarkVoiceNoteReceived(checkinId);
+  if (!voiceNotes.data || voiceNotes.data.length === 0) return null;
+  return (
+    <>
+      {voiceNotes.data.map((note) => (
+        <VoiceNoteBanner
+          key={note.id}
+          note={note}
+          receiving={markReceived.isPending}
+          onReceived={(noteId) => markReceived.mutate(noteId)}
+        />
+      ))}
+    </>
+  );
+}
+
 function CareCardWithLog({ circleId, card }: { circleId: string; card: import('@sper/shared-types').CareCardDTO }) {
   const { user } = useSession();
   const logCare = useLogTouchpoint(circleId, card.checkin_id);
+  const sendVoiceNote = useSendVoiceNote(circleId, card.checkin_id);
   const touchpoints = useTouchpoints(card.checkin_id);
   const alreadyReached = reachedNames(touchpoints.data, user?.id);
   return (
     <CareCard
       card={card}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
+      onSendVoiceNote={(input) =>
+        sendVoiceNote
+          .mutateAsync({
+            audio_base64: input.audioBase64,
+            mime_type: input.mimeType,
+            duration_ms: input.durationMs,
+          })
+          .then(() => undefined)
+      }
       alreadyReached={alreadyReached}
     />
   );
@@ -143,6 +190,7 @@ function MemberDetailSheetWithLog({
   const { user } = useSession();
   const checkinId = entry?.checkin_id ?? '';
   const logCare = useLogTouchpoint(circleId, checkinId);
+  const sendVoiceNote = useSendVoiceNote(circleId, checkinId);
   const touchpoints = useTouchpoints(checkinId);
   const alreadyReached = reachedNames(touchpoints.data, user?.id);
   useNewPrayerAlert(isSelf ? touchpoints.data : undefined, onPrayed);
@@ -153,6 +201,15 @@ function MemberDetailSheetWithLog({
       isSelf={isSelf}
       alreadyReached={alreadyReached}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
+      onSendVoiceNote={(input) =>
+        sendVoiceNote
+          .mutateAsync({
+            audio_base64: input.audioBase64,
+            mime_type: input.mimeType,
+            duration_ms: input.durationMs,
+          })
+          .then(() => undefined)
+      }
       onClose={onClose}
     />
   );
@@ -162,7 +219,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.bg },
   content: { padding: space.lg, gap: space.lg },
   title: { ...type.display, color: color.textPrimary },
-  circleName: { ...type.label, color: color.textSecondary, marginTop: -space.sm },
+  circleName: { ...type.title, color: color.textPrimary, marginTop: -space.sm },
   empty: { ...type.body, color: color.textMuted, textAlign: 'center', paddingVertical: space.xl },
   cta: {
     backgroundColor: color.sage,

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch -r dotenv/config src/main.ts",
+    "start": "tsx src/main.ts",
     "worker": "tsx src/workers/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",

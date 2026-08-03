@@ -17,6 +17,8 @@ import type {
   RegisterDeviceRequest,
   UpdateProfileRequest,
   UserDTO,
+  VoiceNoteDTO,
+  SendVoiceNoteRequest,
 } from '@sper/shared-types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
@@ -188,6 +190,21 @@ export const api = {
     ),
   sendGratitude: (checkinId: string) =>
     raw<{ thanked: number }>(`/checkins/${checkinId}/gratitude`, { method: 'POST' }),
+
+  // Voice notes
+  sendVoiceNote: (checkinId: string, body: SendVoiceNoteRequest) =>
+    raw<{ voice_note: VoiceNoteDTO }>(`/checkins/${checkinId}/voice-notes`, {
+      method: 'POST',
+      body,
+    }).then((r) => r.voice_note),
+  voiceNotes: (checkinId: string) =>
+    raw<{ voice_notes: VoiceNoteDTO[] }>(`/checkins/${checkinId}/voice-notes`).then(
+      (r) => r.voice_notes,
+    ),
+  markVoiceNoteReceived: (checkinId: string, noteId: string) =>
+    raw<{ ok: boolean }>(`/checkins/${checkinId}/voice-notes/${noteId}/received`, {
+      method: 'POST',
+    }),
 
   // Devices
   registerDevice: (body: RegisterDeviceRequest) =>

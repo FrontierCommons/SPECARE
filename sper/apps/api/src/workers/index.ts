@@ -1,8 +1,16 @@
 import { Worker } from 'bullmq';
-import { QUEUE_NAMES, baseWorkerOpts, promptsQueue, graceQueue, closeQueues } from './queue';
+import {
+  QUEUE_NAMES,
+  baseWorkerOpts,
+  promptsQueue,
+  graceQueue,
+  careGapQueue,
+  closeQueues,
+} from './queue';
 import { wireDelivery } from '../delivery/wire';
 import { runPromptScheduler, promptSender } from './prompt-scheduler';
 import { runGraceLoop, graceDispatcher } from './grace-loop';
+import { runCareGapLoop, careGapDispatcher } from './care-gap-loop';
 import { closeDb } from '../config/db';
 
 /**
@@ -23,6 +31,11 @@ async function main(): Promise<void> {
     {},
     { repeat: { pattern: '0 3 * * *' }, removeOnComplete: true, removeOnFail: 100 }, // daily 03:00 UTC
   );
+  await careGapQueue.add(
+    'tick',
+    {},
+    { repeat: { pattern: '*/15 * * * *' }, removeOnComplete: true, removeOnFail: 100 }, // every 15 min
+  );
 
   const promptWorker = new Worker(
     QUEUE_NAMES.prompts,
@@ -42,6 +55,15 @@ async function main(): Promise<void> {
     baseWorkerOpts,
   );
 
+  const careGapWorker = new Worker(
+    QUEUE_NAMES.careGap,
+    async () => {
+      const nudged = await runCareGapLoop(careGapDispatcher);
+      return { nudged };
+    },
+    baseWorkerOpts,
+  );
+
   promptWorker.on('completed', (job, res) => {
     // eslint-disable-next-line no-console
     console.info(`[prompt-scheduler] ${JSON.stringify(res)}`);
@@ -50,10 +72,15 @@ async function main(): Promise<void> {
     // eslint-disable-next-line no-console
     console.info(`[grace-loop] ${JSON.stringify(res)}`);
   });
+  careGapWorker.on('completed', (job, res) => {
+    // eslint-disable-next-line no-console
+    console.info(`[care-gap-loop] ${JSON.stringify(res)}`);
+  });
 
   const shutdown = async () => {
     await promptWorker.close();
     await graceWorker.close();
+    await careGapWorker.close();
     await closeQueues();
     await closeDb();
     process.exit(0);
@@ -62,7 +89,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', () => void shutdown());
 
   // eslint-disable-next-line no-console
-  console.info('[workers] prompt-scheduler + grace-loop running');
+  console.info('[workers] prompt-scheduler + grace-loop + care-gap-loop running');
 }
 
 main().catch((err) => {

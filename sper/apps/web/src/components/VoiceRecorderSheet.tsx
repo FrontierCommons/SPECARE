@@ -1,0 +1,231 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { color, type } from '../design/tokens';
+import { strings } from '../design/strings';
+
+export const VOICE_NOTE_MAX_DURATION_MS = 30_000;
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  onSend: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+}
+
+type Phase = 'idle' | 'recording' | 'review' | 'sending';
+
+const titleStyle = { ...type.title, color: color.textPrimary };
+const hintStyle = { ...type.body, color: color.textSecondary };
+const timerStyle = { ...type.heading, color: color.textPrimary };
+const actionTextStyle = { ...type.label, color: color.textPrimary };
+const actionTextPrimaryStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const errorStyle = { ...type.caption, color: color.statePit };
+const cancelStyle = { ...type.label, color: color.textMuted };
+
+/** First MediaRecorder mime type the browser actually supports, so the real
+ * recorded format is always what gets sent — never a hardcoded guess. */
+function pickMimeType(): string {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+  return candidates.find((c) => MediaRecorder.isTypeSupported(c)) ?? '';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Web port of apps/mobile/src/components/VoiceRecorderSheet.tsx. Same 30s-cap
+ * record/send flow and no playback preview, but via the browser's
+ * MediaRecorder instead of expo-audio — a genuinely different API, not a
+ * literal port. Cross-platform note: this records whatever codec the browser
+ * picks (webm/opus on Chrome & Firefox, mp4/aac on Safari) and sends the
+ * real detected mime type; native apps' decoders may not support webm/opus,
+ * same class of format risk the mobile fix addressed for Android vs iOS.
+ */
+export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const startedAtRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const cleanupStream = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!visible) {
+      setPhase('idle');
+      setError(null);
+      setElapsedMs(0);
+      setRecordedBlob(null);
+      cleanupStream();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  useEffect(() => cleanupStream, []);
+
+  const stop = () => {
+    recorderRef.current?.stop();
+  };
+
+  const start = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mimeType = pickMimeType();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeType || recorder.mimeType || 'audio/webm' });
+        setRecordedBlob(blob);
+        setPhase('review');
+        cleanupStream();
+      };
+
+      recorder.start();
+      startedAtRef.current = Date.now();
+      setPhase('recording');
+      timerRef.current = setInterval(() => {
+        const elapsed = Date.now() - startedAtRef.current;
+        setElapsedMs(elapsed);
+        if (elapsed >= VOICE_NOTE_MAX_DURATION_MS) stop();
+      }, 100);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[VoiceRecorderSheet] failed to start recording', err);
+      setError(strings.care.recordMicDenied);
+      cleanupStream();
+    }
+  };
+
+  const discard = () => {
+    setRecordedBlob(null);
+    setElapsedMs(0);
+    setPhase('idle');
+  };
+
+  const send = async () => {
+    if (!recordedBlob) return;
+    setPhase('sending');
+    try {
+      const audioBase64 = await blobToBase64(recordedBlob);
+      await onSend({
+        audioBase64,
+        mimeType: recordedBlob.type || 'audio/webm',
+        durationMs: Math.min(elapsedMs, VOICE_NOTE_MAX_DURATION_MS) || 1,
+      });
+      onClose();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[VoiceRecorderSheet] failed to send', err);
+      setError(strings.common.error);
+      setPhase('review');
+    }
+  };
+
+  if (!visible) return null;
+
+  const seconds = Math.min(Math.floor(elapsedMs / 1000), VOICE_NOTE_MAX_DURATION_MS / 1000);
+  const timeLabel = `0:${String(seconds).padStart(2, '0')} / 0:${VOICE_NOTE_MAX_DURATION_MS / 1000}`;
+
+  return (
+    <div className="fixed inset-0 z-40">
+      <button
+        aria-label={strings.care.recordCancel}
+        onClick={phase === 'idle' ? onClose : undefined}
+        className="absolute inset-0 bg-[rgba(10,12,14,0.6)]"
+      />
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-md rounded-t-lg border border-border bg-bg p-lg shadow-lg">
+        <div className="h-1 w-10 rounded-full bg-border" />
+        <p style={titleStyle}>{strings.care.sendVoiceNote}</p>
+
+        {phase === 'idle' ? (
+          <button
+            onClick={start}
+            aria-label={strings.care.recordTapToStart}
+            className="flex flex-col items-center gap-sm"
+          >
+            <span
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 72, height: 72, backgroundColor: color.statePit }}
+            >
+              <span className="block rounded-full" style={{ width: 24, height: 24, backgroundColor: color.bg }} />
+            </span>
+            <span style={hintStyle}>{strings.care.recordTapToStart}</span>
+          </button>
+        ) : null}
+
+        {phase === 'recording' ? (
+          <>
+            <p style={timerStyle}>{timeLabel}</p>
+            <button
+              onClick={stop}
+              aria-label={strings.care.recordStop}
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 72, height: 72, backgroundColor: color.stateHeavy }}
+            >
+              <span className="block rounded" style={{ width: 22, height: 22, backgroundColor: color.bg }} />
+            </button>
+            <p style={hintStyle}>{strings.care.recording}</p>
+          </>
+        ) : null}
+
+        {phase === 'review' ? (
+          <>
+            <p style={timerStyle}>{timeLabel}</p>
+            <div className="flex gap-md">
+              <button
+                onClick={discard}
+                aria-label={strings.care.recordRerecord}
+                className="rounded-md border border-border px-lg py-md"
+              >
+                <span style={actionTextStyle}>{strings.care.recordRerecord}</span>
+              </button>
+              <button
+                onClick={send}
+                aria-label={strings.care.recordSend}
+                className="rounded-md border border-sage bg-sage px-lg py-md"
+              >
+                <span style={actionTextPrimaryStyle}>{strings.care.recordSend}</span>
+              </button>
+            </div>
+          </>
+        ) : null}
+
+        {phase === 'sending' ? <p style={hintStyle}>{strings.care.recordSending}</p> : null}
+
+        {error ? <p style={errorStyle}>{error}</p> : null}
+
+        <button onClick={onClose} className="mt-xs">
+          <span style={cancelStyle}>{strings.care.recordCancel}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default VoiceRecorderSheet;

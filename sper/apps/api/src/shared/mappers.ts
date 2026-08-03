@@ -2,6 +2,7 @@ import type {
   CheckInDTO,
   CircleNotificationDTO,
   TouchpointDTO,
+  VoiceNoteDTO,
   StateLevel,
   TouchpointType,
 } from '@sper/shared-types';
@@ -9,6 +10,7 @@ import type {
   CheckInRow,
   CircleNotificationRow,
   TouchpointLogRow,
+  VoiceNoteRow,
 } from '../db/schema';
 
 /**
@@ -56,6 +58,19 @@ export function toTouchpointDTO(
     responder_id: row.responderId,
     responder_name: responderName,
     type: row.type as TouchpointType,
+    created_at: iso(row.createdAt),
+  };
+}
+
+export function toVoiceNoteDTO(row: VoiceNoteRow, senderName: string): VoiceNoteDTO {
+  return {
+    id: row.id,
+    checkin_id: row.checkinId,
+    sender_id: row.senderId,
+    sender_name: senderName,
+    audio_base64: row.audioBase64,
+    mime_type: row.mimeType,
+    duration_ms: row.durationMs,
     created_at: iso(row.createdAt),
   };
 }

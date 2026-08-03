@@ -1,30 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { CareCardDTO, TouchpointType } from '@sper/shared-types';
 import { color, elevation, radius, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { Touchable } from './Touchable';
-import { openWhatsApp, openMessage, outreachPrefill } from '../lib/deeplink';
+import { VoiceRecorderSheet } from './VoiceRecorderSheet';
+import { openMessage, outreachPrefill } from '../lib/deeplink';
 
 interface Props {
   card: CareCardDTO;
   onLogCare: (type: TouchpointType) => void;
+  onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   alreadyReached?: string[]; // responder names
 }
 
 /**
  * The responder's view when a friend has flagged distress. Leads with the
- * person, not the data; every action is off-app or a quiet log.
+ * person, not the data; every action is off-app, a quiet log, or — for the
+ * voice note — a real in-app recording sent straight to them.
  */
-export function CareCard({ card, onLogCare, alreadyReached }: Props) {
+export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: Props) {
   const prefill = outreachPrefill(card.target_name);
   const selfReached = alreadyReached?.includes('You') ?? false;
+  const [recorderVisible, setRecorderVisible] = useState(false);
 
-  const sendVoice = async () => {
-    const opened = await openWhatsApp(prefill);
-    if (opened) onLogCare('VoiceNoteSent');
-  };
   const sendMsg = async () => {
     const opened = await openMessage(prefill);
     if (opened) onLogCare('TextSent');
@@ -57,7 +57,7 @@ export function CareCard({ card, onLogCare, alreadyReached }: Props) {
           {card.verse ? <Text style={styles.verse}>{card.verse}</Text> : null}
           <ResponderGuidanceBox />
           <View style={styles.actions}>
-            <Action label={strings.care.sendVoiceNote} onPress={sendVoice} primary />
+            <Action label={strings.care.sendVoiceNote} onPress={() => setRecorderVisible(true)} primary />
             <Action label={strings.care.sendMessage} onPress={sendMsg} />
             <Action label={strings.care.pray} onPress={() => onLogCare('PrayedFor')} />
           </View>
@@ -70,6 +70,12 @@ export function CareCard({ card, onLogCare, alreadyReached }: Props) {
           {strings.care.alreadyReached(alreadyReached.join(', '))}
         </Text>
       ) : null}
+
+      <VoiceRecorderSheet
+        visible={recorderVisible}
+        onClose={() => setRecorderVisible(false)}
+        onSend={onSendVoiceNote}
+      />
     </View>
   );
 }

@@ -87,7 +87,12 @@ export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: num
               accessibilityRole="button"
               accessibilityLabel={strings.care.thankYou}
             >
-              <Text style={styles.thankBtnText}>
+              <Text
+                style={styles.thankBtnText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
                 {justSent ? strings.care.gratitudeSent : strings.care.thankYou}
               </Text>
             </Touchable>

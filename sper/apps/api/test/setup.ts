@@ -10,6 +10,8 @@ import {
   circleMemberships,
   invites,
   deviceTokens,
+  checkins,
+  touchpointLogs,
 } from '../src/db/schema';
 
 /**
@@ -60,7 +62,7 @@ beforeEach(async () => {
   // Truncate in FK-safe order (CASCADE handles the rest).
   await db.execute(
     sql`TRUNCATE TABLE
-      care_gratitudes, touchpoint_logs, circle_notifications, idempotency_keys, checkins,
+      voice_notes, care_gap_alerts, care_gratitudes, touchpoint_logs, circle_notifications, idempotency_keys, checkins,
       invites, circle_memberships, device_tokens, circles, users
       RESTART IDENTITY CASCADE`,
   );
@@ -122,4 +124,35 @@ export async function makeCircleWith(names: string[]) {
   return { circle, users: members };
 }
 
-export { db, invites, deviceTokens };
+/** A checkin row with a controllable createdAt, for testing time-windowed workers. */
+export async function makeCheckin(
+  circleId: string,
+  userId: string,
+  opts: {
+    createdAt?: Date;
+    expiresAt?: Date;
+    spiritualState?: 'Thriving' | 'Steady' | 'Heavy' | 'In the Pit';
+    physicalState?: 'Thriving' | 'Steady' | 'Heavy' | 'In the Pit';
+    emotionalState?: 'Thriving' | 'Steady' | 'Heavy' | 'In the Pit';
+    vocationalState?: 'Thriving' | 'Steady' | 'Heavy' | 'In the Pit';
+    relationalState?: 'Thriving' | 'Steady' | 'Heavy' | 'In the Pit';
+  } = {},
+) {
+  const [row] = await db
+    .insert(checkins)
+    .values({
+      circleId,
+      userId,
+      spiritualState: opts.spiritualState ?? 'Steady',
+      physicalState: opts.physicalState ?? 'Steady',
+      emotionalState: opts.emotionalState ?? 'Steady',
+      vocationalState: opts.vocationalState ?? 'Steady',
+      relationalState: opts.relationalState ?? 'Steady',
+      createdAt: opts.createdAt,
+      expiresAt: opts.expiresAt,
+    })
+    .returning();
+  return row!;
+}
+
+export { db, invites, deviceTokens, checkins, touchpointLogs };

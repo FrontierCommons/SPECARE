@@ -6,6 +6,7 @@ import {
   varchar,
   char,
   boolean,
+  integer,
   timestamp,
   index,
   uniqueIndex,
@@ -204,6 +205,56 @@ export const careGratitudes = pgTable(
   }),
 );
 
+/* ---------------------------- Voice notes ------------------------------ */
+// A responder's in-app recording for a distressed check-in's author.
+// Audio is stored inline as base64 (clips are capped at 30s, comfortably
+// small) rather than in object storage — no such infra exists yet and this
+// avoids adding it for what stays a low-volume, ephemeral attachment.
+// `receivedAt` is set once the target opens and acknowledges it; from then
+// on it's excluded from the pending list, which is the "disappears" the
+// product asked for — the row itself is kept for audit, not hard-deleted.
+
+export const voiceNotes = pgTable(
+  'voice_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    checkinId: uuid('checkin_id')
+      .notNull()
+      .references(() => checkins.id, { onDelete: 'cascade' }),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    audioBase64: text('audio_base64').notNull(),
+    mimeType: text('mime_type').notNull(),
+    durationMs: integer('duration_ms').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    receivedAt: timestamp('received_at', { withTimezone: true }),
+  },
+  (t) => ({
+    byCheckin: index('idx_voice_notes_checkin').on(t.checkinId),
+  }),
+);
+
+/* --------------------------- Care gap alerts --------------------------- */
+// One row per checkin that ever triggered a care-gap nudge — the unique
+// index on checkin_id is what makes the worker loop idempotent, so a
+// distress checkin only ever nudges the circle once, no matter how many
+// times the loop ticks over it before a touchpoint lands.
+
+export const careGapAlerts = pgTable(
+  'care_gap_alerts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    checkinId: uuid('checkin_id')
+      .notNull()
+      .references(() => checkins.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqCheckin: uniqueIndex('uniq_care_gap_alert_checkin').on(t.checkinId),
+  }),
+);
+
 /* -------------------------- Idempotency keys -------------------------- */
 // GAP #2: distress alerts must reach each member exactly once.
 // Keyed by (checkin_id, recipient_id); a unique index enforces once-only send.
@@ -237,4 +288,6 @@ export type NewCheckInRow = typeof checkins.$inferInsert;
 export type CircleNotificationRow = typeof circleNotifications.$inferSelect;
 export type TouchpointLogRow = typeof touchpointLogs.$inferSelect;
 export type CareGratitudeRow = typeof careGratitudes.$inferSelect;
+export type CareGapAlertRow = typeof careGapAlerts.$inferSelect;
+export type VoiceNoteRow = typeof voiceNotes.$inferSelect;
 export type DeviceTokenRow = typeof deviceTokens.$inferSelect;

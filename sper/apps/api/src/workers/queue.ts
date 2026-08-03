@@ -11,6 +11,7 @@ export const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: nul
 export const QUEUE_NAMES = {
   prompts: 'sper-prompts',
   grace: 'sper-grace',
+  careGap: 'sper-care-gap',
 } as const;
 
 const baseQueueOpts: QueueOptions = { connection };
@@ -18,9 +19,11 @@ export const baseWorkerOpts: WorkerOptions = { connection };
 
 export const promptsQueue = new Queue(QUEUE_NAMES.prompts, baseQueueOpts);
 export const graceQueue = new Queue(QUEUE_NAMES.grace, baseQueueOpts);
+export const careGapQueue = new Queue(QUEUE_NAMES.careGap, baseQueueOpts);
 
 export async function closeQueues(): Promise<void> {
   await promptsQueue.close();
   await graceQueue.close();
+  await careGapQueue.close();
   await connection.quit();
 }

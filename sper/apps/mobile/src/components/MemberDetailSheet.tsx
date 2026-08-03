@@ -18,6 +18,7 @@ interface Props {
   isSelf?: boolean;
   alreadyReached?: string[];
   onLogCare: (type: TouchpointType) => void;
+  onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   onClose: () => void;
 }
 
@@ -27,7 +28,15 @@ interface Props {
  * Care Card (viewing a friend — "I prayed" is one tap away) or, for your own
  * check-in, the anonymous tree — you can't act on your own distress here.
  */
-export function MemberDetailSheet({ entry, careCard, isSelf, alreadyReached, onLogCare, onClose }: Props) {
+export function MemberDetailSheet({
+  entry,
+  careCard,
+  isSelf,
+  alreadyReached,
+  onLogCare,
+  onSendVoiceNote,
+  onClose,
+}: Props) {
   const agg = entry ? aggregateState(entry) : null;
   const isOpen = !!entry;
   const translateY = useRef(new Animated.Value(24)).current;
@@ -89,7 +98,12 @@ export function MemberDetailSheet({ entry, careCard, isSelf, alreadyReached, onL
               </View>
             ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
               <View style={styles.careWrap}>
-                <CareCard card={careCard} onLogCare={onLogCare} alreadyReached={alreadyReached} />
+                <CareCard
+                  card={careCard}
+                  onLogCare={onLogCare}
+                  onSendVoiceNote={onSendVoiceNote}
+                  alreadyReached={alreadyReached}
+                />
               </View>
             ) : null}
           </ScrollView>

@@ -10,6 +10,7 @@ import { useSper, useSubmitCheckIn } from '../api/hooks';
 import { useSession } from '../state/session';
 import { Touchable } from '../components/Touchable';
 import { ChatBubble } from '../components/ChatBubble';
+import { NextCheckInCountdown } from '../components/NextCheckInCountdown';
 import { StateBadge } from '../components/StateBadge';
 import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { relativeTime } from '../lib/time';
@@ -130,7 +131,7 @@ export function CheckInSheetScreen({
         {DIMENSIONS.slice(0, step).map((dim) => (
           <React.Fragment key={dim}>
             <ChatBubble from="bot" text={strings.checkIn.botQuestions[dim]} />
-            <ChatBubble from="user" text={sel[dim]!} />
+            <ChatBubble from="user" text={sel[dim]!} bubbleColor={stateVisual[sel[dim]!].color} />
           </React.Fragment>
         ))}
 
@@ -144,15 +145,13 @@ export function CheckInSheetScreen({
                   <Touchable
                     key={level}
                     onPress={() => answer(DIMENSIONS[step]!, level)}
-                    style={styles.option}
+                    style={[styles.option, { backgroundColor: v.color }]}
                     accessibilityRole="button"
                     accessibilityLabel={v.label}
                   >
-                    <View style={[styles.optionIconWrap, { borderColor: v.color }]}>
-                      <Text style={[styles.optionIcon, { color: v.color }]}>{v.icon}</Text>
-                    </View>
+                    <Text style={[styles.optionIcon, { color: color.bg }]}>{v.icon}</Text>
                     <Text
-                      style={styles.optionLabel}
+                      style={[styles.optionLabel, { color: color.bg }]}
                       numberOfLines={2}
                       adjustsFontSizeToFit
                       minimumFontScale={0.75}
@@ -185,24 +184,27 @@ export function CheckInSheetScreen({
             onChangeText={setNote}
             maxLength={140}
           />
-          <Touchable
-            style={styles.composerBtn}
-            onPress={() => {
-              setNote('');
-              void finish('');
-            }}
-            accessibilityRole="button"
-          >
-            <Text style={styles.composerSkip}>{strings.checkIn.skip}</Text>
-          </Touchable>
-          <Touchable
-            style={[styles.composerBtn, styles.composerSend]}
-            onPress={() => void finish(note)}
-            disabled={submit.isPending}
-            accessibilityRole="button"
-          >
-            <Text style={styles.composerSendText}>{strings.checkIn.send}</Text>
-          </Touchable>
+          {note.trim() ? (
+            <Touchable
+              style={[styles.composerBtn, styles.composerSend]}
+              onPress={() => void finish(note)}
+              disabled={submit.isPending}
+              accessibilityRole="button"
+            >
+              <Text style={styles.composerSendText}>{strings.checkIn.send}</Text>
+            </Touchable>
+          ) : (
+            <Touchable
+              style={styles.composerBtn}
+              onPress={() => {
+                setNote('');
+                void finish('');
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.composerSkip}>{strings.checkIn.skip}</Text>
+            </Touchable>
+          )}
         </View>
       ) : null}
 
@@ -225,6 +227,7 @@ function ResultView({
   onUpdate: () => void;
   onOpenSettings: () => void;
 }) {
+  const { user } = useSession();
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.resultContent}>
@@ -246,6 +249,10 @@ function ResultView({
             );
           })}
         </View>
+
+        {entry.created_at && user ? (
+          <NextCheckInCountdown lastCheckInAt={entry.created_at} frequency={user.checkin_frequency} />
+        ) : null}
 
         <Touchable style={styles.primary} onPress={onUpdate} accessibilityRole="button">
           <Text style={styles.primaryText}>{strings.checkIn.update}</Text>
@@ -272,28 +279,16 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: space.sm,
-    paddingHorizontal: 2,
-    borderRadius: radius.md,
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-  },
-  optionIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 1.5,
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: space.md,
+    paddingHorizontal: 4,
+    borderRadius: radius.md,
   },
-  optionIcon: { fontSize: 15 },
+  optionIcon: { fontSize: 20 },
   optionLabel: {
-    ...type.caption,
-    fontSize: 11,
-    lineHeight: 13,
-    color: color.textPrimary,
+    ...type.label,
+    fontWeight: '700',
     textAlign: 'center',
   },
   composer: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },

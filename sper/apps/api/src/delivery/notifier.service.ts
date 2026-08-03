@@ -8,6 +8,7 @@ import { claimSend } from '../shared/idempotency';
 import type { NotificationDispatcher } from '../modules/notifications/circle-notification.service';
 import type { TouchpointAckDispatcher } from '../modules/touchpoints/touchpoints.service';
 import type { CircleEventDispatcher } from '../modules/circles/circle-events';
+import type { VoiceNoteDispatcher } from '../modules/voicenotes/voicenotes.service';
 import type { CircleNotificationRow, DeviceTokenRow } from '../db/schema';
 
 interface RecipientContact {
@@ -29,7 +30,11 @@ interface RecipientContact {
  *   - Dead tokens reported by the provider are pruned.
  */
 export class NotifierService
-  implements NotificationDispatcher, TouchpointAckDispatcher, CircleEventDispatcher
+  implements
+    NotificationDispatcher,
+    TouchpointAckDispatcher,
+    CircleEventDispatcher,
+    VoiceNoteDispatcher
 {
   constructor(
     private readonly devices: DeviceRepo = deviceRepo,
@@ -114,6 +119,44 @@ export class NotifierService
     const data = { type: 'grace_nudge', circle_id: input.circleId };
 
     await Promise.all(contacts.map((c) => this.sendToContact(c, title, body, data)));
+  }
+
+  /* ---------------------------- Care gap ------------------------------- */
+
+  async careGapNudge(input: {
+    checkinId: string;
+    circleId: string;
+    targetName: string;
+    recipientIds: string[];
+  }): Promise<void> {
+    if (input.recipientIds.length === 0) return;
+    const contacts = await this.loadContacts(input.recipientIds);
+
+    const title = `${input.targetName} could use you today`;
+    const body =
+      `${input.targetName} checked in and hasn't heard from the circle yet. ` +
+      `A text, a call, or a prayer would mean a lot.`;
+    const data = { type: 'care_gap', checkin_id: input.checkinId };
+
+    await Promise.all(contacts.map((c) => this.sendToContact(c, title, body, data)));
+  }
+
+  /* --------------------------- Voice notes ----------------------------- */
+
+  async notifyVoiceNote(input: {
+    targetUserId: string;
+    senderName: string;
+    checkinId: string;
+  }): Promise<void> {
+    const [contact] = await this.loadContacts([input.targetUserId]);
+    if (!contact) return;
+
+    const title = `${input.senderName} sent you a voice note`;
+    const body = 'Tap to listen.';
+    const data = { type: 'voice_note', checkin_id: input.checkinId };
+
+    // One recording, one recipient, one push — no idempotency claim needed.
+    await this.sendToContact(contact, title, body, data);
   }
 
   /* ----------------------------- internals ---------------------------- */

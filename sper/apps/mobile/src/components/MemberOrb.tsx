@@ -28,17 +28,20 @@ const AVATAR_SIZE = SIZE - STROKE * 2 - 8;
  */
 export function MemberOrb({
   entry,
+  isSelf,
   onPress,
 }: {
   entry: SperEntryDTO;
+  isSelf?: boolean;
   onPress: (entry: SperEntryDTO) => void;
 }) {
+  const displayName = isSelf ? 'You' : entry.name;
   const label = DIMENSIONS.map((d) => dimState(entry, d) ?? 'no answer').join(', ');
   return (
     <Touchable
       onPress={() => onPress(entry)}
       accessibilityRole="button"
-      accessibilityLabel={`${entry.name}: ${label}`}
+      accessibilityLabel={`${displayName}: ${label}`}
       style={styles.wrap}
     >
       <View style={styles.box}>
@@ -74,7 +77,7 @@ export function MemberOrb({
         ) : null}
       </View>
       <Text numberOfLines={1} style={styles.name}>
-        {entry.name}
+        {displayName}
       </Text>
     </Touchable>
   );
