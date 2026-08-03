@@ -2,7 +2,7 @@
   "name": "sper",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@9.7.0",
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "dev:api": "docker compose up -d db redis && pnpm --filter @sper/api dev"
