@@ -44,7 +44,7 @@ export async function runPromptScheduler(
   for (const u of all) {
     if (u.paused) continue; // grace: never nag paused users
     const localHour = DateTime.fromJSDate(now, { zone: u.timezone || 'UTC' }).hour;
-    const hours = FREQUENCY_HOURS[u.frequency as CheckInFrequency] ?? FREQUENCY_HOURS.twice;
+    const hours = FREQUENCY_HOURS[u.frequency as CheckInFrequency] ?? FREQUENCY_HOURS.twice!;
     if (!hours.includes(localHour)) continue;
     await sender.sendPrompt({ userId: u.id });
     sent++;
