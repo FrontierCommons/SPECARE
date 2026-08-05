@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { CheckInFrequency } from '@sper/shared-types';
 import { useSession } from '../../../state/session';
 import { useUpdateProfile } from '../../../api/hooks';
 import { Avatar } from '../../../components/Avatar';
+import { TutorialModal } from '../../../components/TutorialModal';
+import { ConfirmModal } from '../../../components/ConfirmModal';
+import { resizeImageToSquareDataUrl } from '../../../lib/resizeImage';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
@@ -17,14 +20,18 @@ const FREQUENCIES: { value: CheckInFrequency; label: string }[] = [
 const titleStyle = { ...type.display, color: color.textPrimary };
 const nameStyle = { ...type.heading, color: color.textPrimary };
 const emailStyle = { ...type.caption, color: color.textMuted };
+const changePhotoStyle = { ...type.caption, color: color.sage };
 const rowLabelStyle = { ...type.label, color: color.textPrimary };
 const rowBodyStyle = { ...type.caption, color: color.textMuted };
 const rowValueStyle = { ...type.body, color: color.sage };
 const segmentTextStyle = { ...type.caption, color: color.textSecondary };
 const segmentTextActiveStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
 const linkTextStyle = { ...type.label, color: color.sage };
+const chevronStyle = { fontSize: 24, fontWeight: 700 as const, color: color.sage };
 const pactTextStyle = { ...type.body, color: color.textSecondary };
 const signOutTextStyle = { ...type.label, color: color.statePit };
+const deleteAccountTextStyle = { ...type.label, color: color.destructive, fontWeight: 600 as const };
+const errorTextStyle = { ...type.caption, color: color.destructive };
 const versionStyle = { ...type.caption, color: color.textMuted };
 
 /**
@@ -33,9 +40,17 @@ const versionStyle = { ...type.caption, color: color.textMuted };
  * stays a deliberate, separate action on My Circle).
  */
 export default function SettingsPage() {
-  const { user, setUser, signOut } = useSession();
+  const { user, setUser, signOut, deleteAccount } = useSession();
   const updateProfile = useUpdateProfile();
   const [showPact, setShowPact] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [pendingFrequency, setPendingFrequency] = useState<CheckInFrequency | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user) return null;
 
@@ -57,16 +72,75 @@ export default function SettingsPage() {
     );
   };
 
+  const confirmFrequency = () => {
+    if (pendingFrequency) setFrequency(pendingFrequency);
+    setPendingFrequency(null);
+  };
+
+  const stagePhoto = async (file: File) => {
+    setPhotoError(false);
+    try {
+      setPendingPhoto(await resizeImageToSquareDataUrl(file));
+    } catch {
+      setPhotoError(true);
+    }
+  };
+
+  const confirmPhoto = () => {
+    if (!pendingPhoto) return;
+    const dataUrl = pendingPhoto;
+    const previous = user.avatar_url;
+    setUser({ ...user, avatar_url: dataUrl }); // optimistic
+    updateProfile.mutate(
+      { avatar_url: dataUrl },
+      {
+        onError: () => {
+          setUser({ ...user, avatar_url: previous });
+          setPhotoError(true);
+        },
+      },
+    );
+    setPendingPhoto(null);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(false);
+    try {
+      await deleteAccount(); // RootGate redirects to /auth once the session clears
+    } catch {
+      setDeleting(false);
+      setDeleteError(true);
+    }
+  };
+
   return (
     <div className="min-h-full bg-bg p-lg">
       <div className="flex flex-col gap-md">
         <h1 style={titleStyle}>{strings.settings.title}</h1>
 
         <div className="flex items-center gap-md rounded-md bg-surface p-md shadow-sm">
-          <Avatar name={user.name} avatarUrl={user.avatar_url} size={56} />
-          <div>
+          <button onClick={() => fileInputRef.current?.click()} aria-label={strings.settings.changePhoto}>
+            <Avatar name={user.name} avatarUrl={user.avatar_url} size={56} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void stagePhoto(file);
+            }}
+          />
+          <div className="flex-1">
             <p style={nameStyle}>{user.name}</p>
             <p style={emailStyle}>{user.email}</p>
+            <button onClick={() => fileInputRef.current?.click()} className="mt-xs">
+              <span style={changePhotoStyle}>{strings.settings.changePhoto}</span>
+            </button>
+            {photoError ? <p style={errorTextStyle}>{strings.settings.photoFailed}</p> : null}
           </div>
         </div>
 
@@ -106,7 +180,7 @@ export default function SettingsPage() {
               return (
                 <button
                   key={f.value}
-                  onClick={() => setFrequency(f.value)}
+                  onClick={() => !active && setPendingFrequency(f.value)}
                   aria-pressed={active}
                   className={`flex-1 rounded-md border py-sm text-center ${
                     active ? 'border-sage bg-surfaceRaised' : 'border-border'
@@ -121,7 +195,7 @@ export default function SettingsPage() {
 
         <button onClick={() => setShowPact((v) => !v)} className="flex items-center justify-between py-sm">
           <span style={linkTextStyle}>{strings.settings.viewPact}</span>
-          <span style={{ color: color.sage }}>{showPact ? '︿' : '﹀'}</span>
+          <span style={chevronStyle}>{showPact ? '︿' : '﹀'}</span>
         </button>
         {showPact ? (
           <div className="-mt-sm rounded-md bg-surfaceRaised p-md">
@@ -129,14 +203,63 @@ export default function SettingsPage() {
           </div>
         ) : null}
 
+        <button onClick={() => setShowTutorial(true)} className="flex items-center justify-between py-sm">
+          <span style={linkTextStyle}>{strings.settings.tutorial}</span>
+          <span style={chevronStyle}>﹀</span>
+        </button>
+
         <button onClick={signOut} className="mt-lg p-md text-center">
           <span style={signOutTextStyle}>{strings.settings.signOut}</span>
         </button>
+
+        <button onClick={() => setShowDeleteConfirm(true)} className="p-md text-center">
+          <span style={deleteAccountTextStyle}>{strings.settings.deleteAccount}</span>
+        </button>
+        {deleteError ? <p style={errorTextStyle} className="text-center">{strings.settings.deleteAccountFailed}</p> : null}
 
         <p style={versionStyle} className="text-center">
           {strings.settings.version}
         </p>
       </div>
+
+      {showTutorial ? (
+        <TutorialModal onSkip={() => setShowTutorial(false)} onFinish={() => setShowTutorial(false)} />
+      ) : null}
+
+      <ConfirmModal
+        open={pendingPhoto !== null}
+        title={strings.settings.confirmPhotoTitle}
+        body={strings.settings.confirmPhotoBody}
+        previewImage={pendingPhoto ?? undefined}
+        confirmLabel={strings.settings.confirmPhotoCta}
+        onConfirm={confirmPhoto}
+        onCancel={() => setPendingPhoto(null)}
+      />
+
+      <ConfirmModal
+        open={pendingFrequency !== null}
+        title={strings.settings.frequencyConfirmTitle}
+        body={
+          pendingFrequency
+            ? strings.settings.frequencyConfirmBody(FREQUENCIES.find((f) => f.value === pendingFrequency)!.label)
+            : ''
+        }
+        confirmLabel={strings.settings.frequencyConfirmCta}
+        onConfirm={confirmFrequency}
+        onCancel={() => setPendingFrequency(null)}
+      />
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title={strings.settings.deleteAccountTitle}
+        body={`${strings.settings.deleteAccountBody} ${strings.settings.deleteAccountHint(strings.settings.deleteAccountPhrase)}`}
+        confirmLabel={strings.settings.deleteAccountCta}
+        confirmPhrase={strings.settings.deleteAccountPhrase}
+        danger
+        pending={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

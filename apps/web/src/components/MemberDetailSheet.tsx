@@ -16,7 +16,11 @@ interface Props {
   careCard?: CareCardDTO;
   /** True when the viewer is looking at their own check-in. */
   isSelf?: boolean;
-  alreadyReached?: string[];
+  /** Names of people who've sent a voice note for this check-in — the only
+   * touchpoint type the Care Card's "already reached out" line counts. */
+  voiceNoteResponders?: string[];
+  /** Touchpoints of any kind, for the self-view tree's care count. */
+  touchpointCount?: number;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   onClose: () => void;
@@ -43,7 +47,8 @@ export function MemberDetailSheet({
   entry,
   careCard,
   isSelf,
-  alreadyReached,
+  voiceNoteResponders,
+  touchpointCount,
   onLogCare,
   onSendVoiceNote,
   onClose,
@@ -102,13 +107,13 @@ export function MemberDetailSheet({
           </div>
 
           {isSelf ? (
-            <SelfCareTree entry={entry} count={alreadyReached?.length ?? 0} />
+            <SelfCareTree entry={entry} count={touchpointCount ?? 0} />
           ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
             <CareCard
               card={careCard}
               onLogCare={onLogCare}
               onSendVoiceNote={onSendVoiceNote}
-              alreadyReached={alreadyReached}
+              alreadyReached={voiceNoteResponders}
             />
           ) : null}
         </div>

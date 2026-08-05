@@ -151,6 +151,7 @@ export const api = {
   me: () => raw<{ user: UserDTO }>('/users/me').then((r) => r.user),
   updateProfile: (body: UpdateProfileRequest) =>
     raw<{ user: UserDTO }>('/users/me', { method: 'PATCH', body }).then((r) => r.user),
+  deleteAccount: () => raw<{ ok: boolean }>('/users/me', { method: 'DELETE' }),
 
   // Circles
   myCircles: () => raw<{ circles: MyCircleDTO[] }>('/circles/mine').then((r) => r.circles),

@@ -20,6 +20,10 @@ const updateProfileSchema = z.object({
   notifications_paused: z.boolean().optional(),
   timezone: z.string().min(1).optional(),
   checkin_frequency: checkinFrequencyEnum.optional(),
+  // A resized (~256px) JPEG data URI — capped well under the base64
+  // voice-note ceiling since, unlike a voice note, this rides along on
+  // every member-list and circle response, not just a single fetch.
+  avatar_url: z.string().max(300_000).nullable().optional(),
 });
 
 export async function userRoutes(app: FastifyInstance): Promise<void> {
@@ -41,8 +45,14 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       ...(body.checkin_frequency !== undefined
         ? { checkinFrequency: body.checkin_frequency as CheckInFrequency }
         : {}),
+      ...(body.avatar_url !== undefined ? { avatarUrl: body.avatar_url } : {}),
     });
     return { user: toUserDTO(user) };
+  });
+
+  app.delete('/users/me', async (req, reply) => {
+    await authRepo.deleteUser(db, currentUserId(req));
+    return reply.code(200).send({ ok: true });
   });
 
   app.post('/devices', async (req, reply) => {

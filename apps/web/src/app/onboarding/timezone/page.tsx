@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../api/client';
 import { useSession } from '../../../state/session';
-import { timezoneOptions, labelForTimezone } from '../../../lib/timezones';
+import { timezoneOptions, labelWithOffset } from '../../../lib/timezones';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
@@ -13,8 +13,7 @@ const bodyStyle = { ...type.body, color: color.textSecondary };
 const tzTextStyle = { ...type.heading, color: color.sage };
 const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const linkStyle = { ...type.label, color: color.sage };
-const rowTextStyle = { ...type.body, color: color.textSecondary };
-const rowTextActiveStyle = { ...type.body, color: color.sage, fontWeight: 600 as const };
+const selectTextStyle = { ...type.body, color: color.textPrimary };
 
 /**
  * Two distinct moments, not one screen with everything at once: first pick a
@@ -59,7 +58,9 @@ export default function TimezonePage() {
       <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-md bg-bg p-lg">
         <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
         <div className="w-fit rounded-md border border-border bg-surface p-md">
-          <span style={tzTextStyle}>{labelForTimezone(confirmedTz, options)}</span>
+          <span style={tzTextStyle}>
+            {labelWithOffset(options.find((z) => z.value === confirmedTz) ?? { value: confirmedTz, label: confirmedTz })}
+          </span>
         </div>
         <p style={bodyStyle}>{strings.onboarding.timezoneBody}</p>
         <button
@@ -80,23 +81,18 @@ export default function TimezonePage() {
       <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
       <p style={bodyStyle}>{strings.onboarding.timezonePrompt}</p>
 
-      <div className="flex flex-1 flex-col gap-xs overflow-y-auto py-xs">
-        {options.map((z) => {
-          const active = selected === z.value;
-          return (
-            <button
-              key={z.value}
-              onClick={() => setSelected(z.value)}
-              aria-pressed={active}
-              className={`rounded-md border p-md text-left ${
-                active ? 'border-sage bg-surfaceRaised' : 'border-border bg-surface'
-              }`}
-            >
-              <span style={active ? rowTextActiveStyle : rowTextStyle}>{z.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <select
+        value={selected}
+        onChange={(e) => setSelected(e.target.value)}
+        className="rounded-md border border-border bg-surface p-md"
+        style={selectTextStyle}
+      >
+        {options.map((z) => (
+          <option key={z.value} value={z.value}>
+            {labelWithOffset(z)}
+          </option>
+        ))}
+      </select>
 
       <button onClick={confirm} disabled={busy} className="mt-md rounded-md bg-sage p-md text-center">
         <span style={primaryTextStyle}>{strings.onboarding.confirmTimezone}</span>

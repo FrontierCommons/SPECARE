@@ -49,3 +49,22 @@ export function timezoneOptions(current: string): TimezoneOption[] {
 export function labelForTimezone(value: string, options: TimezoneOption[]): string {
   return options.find((z) => z.value === value)?.label ?? value;
 }
+
+/**
+ * The "(UTC+07:00)" style prefix every OS timezone picker leads with — the
+ * one globally understood reference point a city name alone doesn't give
+ * you. `Intl`'s longOffset always includes the minutes except for UTC
+ * itself, which comes back as bare "GMT" — special-cased to "+00:00".
+ */
+export function utcOffsetLabel(tz: string, date: Date = new Date()): string {
+  const raw = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' })
+    .formatToParts(date)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  if (!raw || raw === 'GMT') return 'UTC+00:00';
+  return raw.replace('GMT', 'UTC');
+}
+
+/** The full picker row text: offset first, then the city label. */
+export function labelWithOffset(z: TimezoneOption, date?: Date): string {
+  return `(${utcOffsetLabel(z.value, date)}) ${z.label}`;
+}

@@ -164,6 +164,25 @@ export const strings = {
     viewPact: 'Review the pact',
     signOut: 'Sign out',
     version: 'SPER · version 0.1.0',
+
+    changePhoto: 'Change photo',
+    photoFailed: "Couldn't update your photo. Try again.",
+    confirmPhotoTitle: 'Use this photo?',
+    confirmPhotoBody: 'This is what your circle will see. You can change it again anytime.',
+    confirmPhotoCta: 'Use this photo',
+
+    frequencyConfirmTitle: 'Change check-in frequency?',
+    frequencyConfirmBody: (label: string) => `Switch to "${label}"? This changes how often you're prompted to check in.`,
+    frequencyConfirmCta: 'Change frequency',
+
+    deleteAccount: 'Delete my account',
+    deleteAccountTitle: 'Delete your account?',
+    deleteAccountBody:
+      'This permanently removes your profile, check-ins, and circle memberships. Your circle keeps its history, but it will no longer show you. This can’t be undone.',
+    deleteAccountPhrase: 'DELETE',
+    deleteAccountHint: (phrase: string) => `Type ${phrase} to confirm.`,
+    deleteAccountCta: 'Delete my account',
+    deleteAccountFailed: "Couldn't delete your account. Try again.",
   },
 
   grace: {

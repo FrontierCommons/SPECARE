@@ -17,6 +17,7 @@ import { SperWidget } from '../../../components/SperWidget';
 import { CareCard } from '../../../components/CareCard';
 import { SelfCareTree } from '../../../components/SelfCareTree';
 import { MemberDetailSheet } from '../../../components/MemberDetailSheet';
+import { NextCheckInCountdown } from '../../../components/NextCheckInCountdown';
 import { VoiceNoteBanner } from '../../../components/VoiceNoteBanner';
 import { Toast } from '../../../components/Toast';
 import { useNewPrayerAlert } from '../../../lib/useNewPrayerAlert';
@@ -25,8 +26,8 @@ import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
 const titleStyle = { ...type.display, color: color.textPrimary };
-const circleNameStyle = { ...type.label, color: color.textSecondary };
-const emptyStyle = { ...type.body, color: color.textMuted };
+const circleNameStyle = { ...type.heading, color: color.sage, fontWeight: "bold" };
+const emptyStyle = { ...type.body, color: color.textPrimary };
 const ctaTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 
 export default function TodayPage() {
@@ -64,14 +65,22 @@ export default function TodayPage() {
       <Toast message={strings.care.prayerToast} visible={prayerToastVisible} />
 
       <div className="flex flex-col gap-lg p-lg">
-        <div>
+        <div className="mb-4">
           <h1 style={titleStyle}>{strings.sper.title}</h1>
           {circleName ? <p style={circleNameStyle}>{circleName}</p> : null}
         </div>
 
+        {sper.data && sper.data.length > 0 ? (
+          <SperWidget entries={sper.data} currentUserId={user?.id} onSelect={setSelected} />
+        ) : (
+          <p style={emptyStyle} className="py-xl text-center">
+            {strings.sper.empty}
+          </p>
+        )}
+
         {/* The one-time "they're grateful for your care" message leads the
-            screen — it's the warmest thing here and shouldn't get buried
-            below the sper and everyone else's cards. */}
+            care-card stack — it's the warmest thing here and shouldn't get
+            buried below everyone else's cards. */}
         {care.data
           ?.filter((card) => card.target_user_id !== user?.id && card.gratitude_shown)
           .map((card) => <CareCardWithLog key={card.checkin_id} circleId={circleId} card={card} />)}
@@ -83,14 +92,6 @@ export default function TodayPage() {
           </>
         ) : null}
 
-        {sper.data && sper.data.length > 0 ? (
-          <SperWidget entries={sper.data} currentUserId={user?.id} onSelect={setSelected} />
-        ) : (
-          <p style={emptyStyle} className="py-xl text-center">
-            {strings.sper.empty}
-          </p>
-        )}
-
         {care.data
           ?.filter((card) => card.target_user_id !== user?.id)
           // The one-time gratitude flash now renders above, up top; a card
@@ -99,11 +100,17 @@ export default function TodayPage() {
           .filter((card) => !card.gratitude_received && !card.gratitude_shown)
           .map((card) => <CareCardWithLog key={card.checkin_id} circleId={circleId} card={card} />)}
 
+        {myEntry?.checkin_id && myEntry.created_at && user ? (
+          <NextCheckInCountdown lastCheckInAt={myEntry.created_at} frequency={user.checkin_frequency} />
+        ) : null}
+
         <button
           onClick={() => router.push('/checkin')}
           className="mt-sm rounded-md bg-sage p-md text-center shadow-sm"
         >
-          <span style={ctaTextStyle}>{strings.sper.checkInCta}</span>
+          <span style={ctaTextStyle}>
+            {myEntry?.checkin_id ? strings.sper.checkInCta : strings.sper.checkInCtaFirst}
+          </span>
         </button>
       </div>
 
@@ -150,7 +157,7 @@ function CareCardWithLog({ circleId, card }: { circleId: string; card: CareCardD
   const logCare = useLogTouchpoint(circleId, card.checkin_id);
   const sendVoiceNote = useSendVoiceNote(circleId, card.checkin_id);
   const touchpoints = useTouchpoints(card.checkin_id);
-  const alreadyReached = reachedNames(touchpoints.data, user?.id);
+  const alreadyReached = reachedNames(touchpoints.data, user?.id, 'VoiceNoteSent');
   return (
     <CareCard
       card={card}
@@ -189,14 +196,15 @@ function MemberDetailSheetWithLog({
   const logCare = useLogTouchpoint(circleId, checkinId);
   const sendVoiceNote = useSendVoiceNote(circleId, checkinId);
   const touchpoints = useTouchpoints(checkinId);
-  const alreadyReached = reachedNames(touchpoints.data, user?.id);
+  const voiceNoteResponders = reachedNames(touchpoints.data, user?.id, 'VoiceNoteSent');
   useNewPrayerAlert(isSelf ? touchpoints.data : undefined, onPrayed);
   return (
     <MemberDetailSheet
       entry={entry}
       careCard={careCard}
       isSelf={isSelf}
-      alreadyReached={alreadyReached}
+      voiceNoteResponders={voiceNoteResponders}
+      touchpointCount={touchpoints.data?.length ?? 0}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
       onSendVoiceNote={(input) =>
         sendVoiceNote

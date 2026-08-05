@@ -2,11 +2,18 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { STATE_LEVELS, type StateLevel, type CheckInDimension, type SperEntryDTO } from '@sper/shared-types';
+import {
+  STATE_LEVELS,
+  type StateLevel,
+  type CheckInDimension,
+  type CheckInFrequency,
+  type SperEntryDTO,
+} from '@sper/shared-types';
 import { useSper, useSubmitCheckIn } from '../../../api/hooks';
 import { useSession } from '../../../state/session';
 import { ChatBubble } from '../../../components/ChatBubble';
 import { StateBadge } from '../../../components/StateBadge';
+import { NextCheckInCountdown } from '../../../components/NextCheckInCountdown';
 import { DIMENSIONS, dimState } from '../../../lib/checkinState';
 import { relativeTime } from '../../../lib/time';
 import { enqueueCheckIn } from '../../../lib/offlineQueue';
@@ -54,6 +61,15 @@ export default function CheckInPage() {
     transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: 'smooth' });
   }, [step]);
 
+  // Automatic, not just available — the member's already seen the "sent"
+  // confirmation bubble by the time this fires; the Done button below stays
+  // as an immediate-exit option for anyone who doesn't want to wait it out.
+  useEffect(() => {
+    if (step !== DONE_STEP) return;
+    const id = setTimeout(() => router.push('/today'), 1500);
+    return () => clearTimeout(id);
+  }, [step, router]);
+
   if (sper.isLoading) {
     return (
       <div className="flex min-h-full items-center justify-center bg-bg">
@@ -69,6 +85,7 @@ export default function CheckInPage() {
     return (
       <ResultView
         entry={myEntry!}
+        frequency={user!.checkin_frequency}
         onUpdate={() => {
           setSel({});
           setStep(0);
@@ -205,10 +222,12 @@ export default function CheckInPage() {
 /** The default landing view: today's answers, explicitly shown, no re-prompt. */
 function ResultView({
   entry,
+  frequency,
   onUpdate,
   onOpenSettings,
 }: {
   entry: SperEntryDTO;
+  frequency: CheckInFrequency;
   onUpdate: () => void;
   onOpenSettings: () => void;
 }) {
@@ -231,6 +250,8 @@ function ResultView({
             );
           })}
         </div>
+
+        {entry.created_at ? <NextCheckInCountdown lastCheckInAt={entry.created_at} frequency={frequency} /> : null}
 
         <button onClick={onUpdate} className="rounded-md bg-sage p-md text-center shadow-sm">
           <span style={primaryTextStyle}>{strings.checkIn.update}</span>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../client';
+import { useSession } from '../../state/session';
 import type {
   LogTouchpointRequest,
   SubmitCheckInRequest,
@@ -124,12 +125,21 @@ export function useCreateInvite(circleId: string) {
   });
 }
 
+/** The dashboard's circle widget and member list read from their own cached
+ * queries, not from session.user — an avatar (or any profile field) change
+ * needs those invalidated too, or it only shows up in Settings until the
+ * next unrelated refetch. */
 export function useUpdateProfile() {
   const qc = useQueryClient();
+  const { activeCircleId } = useSession();
   return useMutation({
     mutationFn: (body: UpdateProfileRequest) => api.updateProfile(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.me });
+      if (activeCircleId) {
+        qc.invalidateQueries({ queryKey: keys.sper(activeCircleId) });
+        qc.invalidateQueries({ queryKey: keys.members(activeCircleId) });
+      }
     },
   });
 }

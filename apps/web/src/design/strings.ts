@@ -6,8 +6,8 @@
 
 export const strings = {
   app: {
-    name: 'SPER',
-    tagline: 'Stay close through the distance.',
+    name: 'SPECARE',
+    tagline: 'Speak your care! Stay close through the distance.',
   },
 
   nav: {
@@ -67,15 +67,17 @@ export const strings = {
 
   sper: {
     title: 'Your circle',
-    empty: 'No check-ins yet today. Yours can be the first.',
-    checkInCta: 'Wanna update your SPER?',
+    empty: 'No check-ins yet today. Yours can be the first!',
+    checkInCta: 'Wanna update your SPECARE?',
+    checkInCtaFirst: 'Wanna check-in the first time today?',
+    nextCheckIn: (t: string) => `Next check-in in ${t}`,
     quietFor: (name: string) => `${name} has been quiet for a bit`,
   },
 
   checkIn: {
-    title: 'How are you, honestly?',
-    subtitle: 'Tap one for each. No wrong answers.',
-    notePlaceholder: 'Any quick context? (optional)',
+    title: 'Share SPECARE with your friends',
+    subtitle: 'Speak your care today. No wrong answers.',
+    notePlaceholder: 'Any quick context? Or prayer (optional)',
     submit: 'Share with my circle',
     dimensions: {
       spiritual: 'Spiritual',
@@ -86,9 +88,9 @@ export const strings = {
     },
     botIntro: 'Hey — quick check-in. Just five taps, honestly answered.',
     botQuestions: {
-      spiritual: 'How’s your walk with God today?',
-      physical: 'How’s your body holding up?',
-      emotional: 'How are you feeling underneath it all?',
+      spiritual: 'How’s your relationship with God now?',
+      physical: 'How’s your body feeling now?',
+      emotional: 'How are you feeling now?',
       vocational: 'How’s work or life direction sitting with you?',
       relational: 'How connected do you feel to the people around you?',
     },
@@ -117,7 +119,7 @@ export const strings = {
     acked: (name: string) => `${name} stepped up to hold space for you today.`,
     thankYou: 'Thank you!',
     gratitudeSent: 'You thanked everyone who reached out.',
-    gratitudeReceived: (name: string) => `${name} wants to show gratitude for your care.`,
+    gratitudeReceived: (name: string) => `${name} wants to show gratitude for your care!`,
     selfTitle: 'You could use some care',
     treeTitle: 'Your tree today',
     thrivingCaption: 'Growing steady — thanks for checking in.',
@@ -132,7 +134,7 @@ export const strings = {
     recordRerecord: 'Re-record',
     recordCancel: 'Cancel',
     recordSending: 'Sending…',
-    recordMicDenied: 'SPER needs microphone access to record a voice note.',
+    recordMicDenied: ' needs microphone access to record a voice note.',
     voiceNoteFrom: (name: string) => `${name} sent you a voice note`,
     voiceNotePlay: 'Play',
     voiceNotePause: 'Pause',
@@ -160,8 +162,54 @@ export const strings = {
     frequencyThrice: 'Three times a day',
     aboutCircle: 'About this circle',
     viewPact: 'Review the pact',
+    tutorial: 'Tutorial',
     signOut: 'Sign out',
-    version: 'SPER · version 0.1.0',
+    version: 'SPECARE · version 0.1.0',
+
+    changePhoto: 'Change photo',
+    photoFailed: "Couldn't update your photo. Try again.",
+    confirmPhotoTitle: 'Use this photo?',
+    confirmPhotoBody: 'This is what your circle will see. You can change it again anytime.',
+    confirmPhotoCta: 'Use this photo',
+
+    frequencyConfirmTitle: 'Change check-in frequency?',
+    frequencyConfirmBody: (label: string) => `Switch to "${label}"? This changes how often you're prompted to check in.`,
+    frequencyConfirmCta: 'Change frequency',
+
+    deleteAccount: 'Delete my account',
+    deleteAccountTitle: 'Delete your account?',
+    deleteAccountBody:
+      'This permanently removes your profile, check-ins, and circle memberships. Your circle keeps its history, but it will no longer show you. This can’t be undone.',
+    deleteAccountPhrase: 'DELETE',
+    deleteAccountHint: (phrase: string) => `Type ${phrase} to confirm.`,
+    deleteAccountCta: 'Delete my account',
+    deleteAccountFailed: "Couldn't delete your account. Try again.",
+  },
+
+  tutorial: {
+    skip: 'Skip',
+    back: 'Back',
+    next: 'Next',
+    done: 'Got it',
+    progress: (step: number, total: number) => `${step} of ${total}`,
+    steps: [
+      {
+        title: 'Your circle, at a glance',
+        body: 'Each person’s ring is split into five parts of life — spiritual, physical, emotional, career, and relational,. The color of each slice shows how that part is going today, from clear skies to a harder season.',
+      },
+      {
+        title: 'A daily check-in',
+        body: 'Once a day (or as often as you choose), answer one honest question for each part of life. Your answers color your ring, so your circle can see how you’re really doing without you having to explain it.',
+      },
+      {
+        title: 'The Care Card',
+        body: 'When someone’s Heavy or In the Pit, a Care Card appears for them. It changes as things move: ways to help while no one’s reached out yet, who’s already stepped up once someone has, and a quiet thank-you once they respond.',
+      },
+      {
+        title: 'Show up, keep the tree green',
+        body: 'Send a voice note, send a message, or simply pray — any one lets someone know they’re not alone. Every bit of care keeps their tree green and growing; left too long, it starts to wither. Notice, and show up — that’s the whole idea.',
+      },
+    ],
   },
 
   grace: {

@@ -18,6 +18,8 @@ interface SessionState {
   /** Re-fetch the member's circle list — call after joining or leaving one. */
   refreshCircles: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Deletes the account server-side, then clears local state exactly like signOut. */
+  deleteAccount: () => Promise<void>;
 }
 
 const CIRCLE_KEY = 'sper.activeCircle';
@@ -120,6 +122,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setCircles([]);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount();
+    await api.signOut(); // clears local tokens — the account is already gone server-side
+    await AsyncStorage.removeItem(CIRCLE_KEY);
+    setUser(null);
+    setActiveCircleId(null);
+    setPendingCircleId(null);
+    setCircles([]);
+  }, []);
+
   return (
     <SessionContext.Provider
       value={{
@@ -133,6 +145,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setActiveCircle,
         refreshCircles: loadCircles,
         signOut,
+        deleteAccount,
       }}
     >
       {children}

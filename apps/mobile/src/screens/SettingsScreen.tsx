@@ -5,6 +5,8 @@ import { useSession } from '../state/session';
 import { useUpdateProfile } from '../api/hooks';
 import { Avatar } from '../components/Avatar';
 import { Touchable } from '../components/Touchable';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { pickAndResizeAvatar } from '../lib/resizeImage';
 import { color, elevation, radius, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
@@ -20,9 +22,15 @@ const FREQUENCIES: { value: CheckInFrequency; label: string }[] = [
  * stays a deliberate, separate action on My Circle).
  */
 export function SettingsScreen() {
-  const { user, setUser, signOut } = useSession();
+  const { user, setUser, signOut, deleteAccount } = useSession();
   const updateProfile = useUpdateProfile();
   const [showPact, setShowPact] = useState(false);
+  const [pendingFrequency, setPendingFrequency] = useState<CheckInFrequency | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -43,15 +51,64 @@ export function SettingsScreen() {
     );
   };
 
+  const confirmFrequency = () => {
+    if (pendingFrequency) setFrequency(pendingFrequency);
+    setPendingFrequency(null);
+  };
+
+  const pickPhoto = async () => {
+    setPhotoError(false);
+    try {
+      const dataUrl = await pickAndResizeAvatar();
+      if (dataUrl) setPendingPhoto(dataUrl); // canceled or permission denied otherwise
+    } catch {
+      setPhotoError(true);
+    }
+  };
+
+  const confirmPhoto = () => {
+    if (!pendingPhoto) return;
+    const dataUrl = pendingPhoto;
+    const previous = user.avatar_url;
+    setUser({ ...user, avatar_url: dataUrl }); // optimistic
+    updateProfile.mutate(
+      { avatar_url: dataUrl },
+      {
+        onError: () => {
+          setUser({ ...user, avatar_url: previous });
+          setPhotoError(true);
+        },
+      },
+    );
+    setPendingPhoto(null);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(false);
+    try {
+      await deleteAccount(); // the root navigator switches to Auth once the session clears
+    } catch {
+      setDeleting(false);
+      setDeleteError(true);
+    }
+  };
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{strings.settings.title}</Text>
 
       <View style={styles.profileCard}>
-        <Avatar name={user.name} avatarUrl={user.avatar_url} size={56} />
+        <Touchable onPress={() => void pickPhoto()} accessibilityRole="button" accessibilityLabel={strings.settings.changePhoto}>
+          <Avatar name={user.name} avatarUrl={user.avatar_url} size={56} />
+        </Touchable>
         <View style={styles.profileText}>
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.email}>{user.email}</Text>
+          <Touchable onPress={() => void pickPhoto()} accessibilityRole="button">
+            <Text style={styles.changePhoto}>{strings.settings.changePhoto}</Text>
+          </Touchable>
+          {photoError ? <Text style={styles.errorText}>{strings.settings.photoFailed}</Text> : null}
         </View>
       </View>
 
@@ -86,7 +143,7 @@ export function SettingsScreen() {
             return (
               <Touchable
                 key={f.value}
-                onPress={() => setFrequency(f.value)}
+                onPress={() => !active && setPendingFrequency(f.value)}
                 style={[styles.segment, active && styles.segmentActive]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
@@ -112,7 +169,47 @@ export function SettingsScreen() {
         <Text style={styles.signOutText}>{strings.settings.signOut}</Text>
       </Touchable>
 
+      <Touchable style={styles.deleteAccount} onPress={() => setShowDeleteConfirm(true)} accessibilityRole="button">
+        <Text style={styles.deleteAccountText}>{strings.settings.deleteAccount}</Text>
+      </Touchable>
+      {deleteError ? <Text style={[styles.errorText, styles.centerText]}>{strings.settings.deleteAccountFailed}</Text> : null}
+
       <Text style={styles.version}>{strings.settings.version}</Text>
+
+      <ConfirmModal
+        open={pendingPhoto !== null}
+        title={strings.settings.confirmPhotoTitle}
+        body={strings.settings.confirmPhotoBody}
+        previewImage={pendingPhoto ?? undefined}
+        confirmLabel={strings.settings.confirmPhotoCta}
+        onConfirm={confirmPhoto}
+        onCancel={() => setPendingPhoto(null)}
+      />
+
+      <ConfirmModal
+        open={pendingFrequency !== null}
+        title={strings.settings.frequencyConfirmTitle}
+        body={
+          pendingFrequency
+            ? strings.settings.frequencyConfirmBody(FREQUENCIES.find((f) => f.value === pendingFrequency)!.label)
+            : ''
+        }
+        confirmLabel={strings.settings.frequencyConfirmCta}
+        onConfirm={confirmFrequency}
+        onCancel={() => setPendingFrequency(null)}
+      />
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title={strings.settings.deleteAccountTitle}
+        body={`${strings.settings.deleteAccountBody} ${strings.settings.deleteAccountHint(strings.settings.deleteAccountPhrase)}`}
+        confirmLabel={strings.settings.deleteAccountCta}
+        confirmPhrase={strings.settings.deleteAccountPhrase}
+        danger
+        pending={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </ScrollView>
   );
 }
@@ -133,6 +230,9 @@ const styles = StyleSheet.create({
   profileText: { gap: 2 },
   name: { ...type.heading, color: color.textPrimary },
   email: { ...type.caption, color: color.textMuted },
+  changePhoto: { ...type.caption, color: color.sage, marginTop: 2 },
+  errorText: { ...type.caption, color: color.destructive },
+  centerText: { textAlign: 'center' },
   section: { backgroundColor: color.surface, borderRadius: radius.md, padding: space.md, ...elevation.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   rowText: { flex: 1, gap: 2 },
@@ -168,6 +268,8 @@ const styles = StyleSheet.create({
   pactText: { ...type.body, color: color.textSecondary },
   signOut: { padding: space.md, alignItems: 'center', marginTop: space.lg },
   signOutText: { ...type.label, color: color.statePit },
+  deleteAccount: { padding: space.md, alignItems: 'center' },
+  deleteAccountText: { ...type.label, color: color.destructive, fontWeight: '600' },
   version: { ...type.caption, color: color.textMuted, textAlign: 'center' },
 });
 

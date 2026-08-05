@@ -15,7 +15,7 @@ const ARC_LEN = (ARC_DEG / 360) * CIRCUMFERENCE;
 const DASH = `${ARC_LEN} ${CIRCUMFERENCE - ARC_LEN}`;
 const AVATAR_SIZE = SIZE - STROKE * 2 - 8;
 
-const nameStyle = { ...type.caption, color: color.textSecondary };
+const nameStyle = { ...type.caption, color: color.textPrimary };
 
 /**
  * One person in the circle: their avatar wrapped in a bold ring split into

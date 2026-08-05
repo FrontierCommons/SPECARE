@@ -104,7 +104,7 @@ export const invites = pgTable('invites', {
   code: char('code', { length: 6 }).unique(),
   email: text('email'),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  redeemedBy: uuid('redeemed_by').references(() => users.id),
+  redeemedBy: uuid('redeemed_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -147,7 +147,7 @@ export const circleNotifications = pgTable(
       .references(() => checkins.id, { onDelete: 'cascade' }),
     targetUserId: uuid('target_user_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     circleId: uuid('circle_id')
       .notNull()
       .references(() => circles.id, { onDelete: 'cascade' }),
@@ -170,7 +170,7 @@ export const touchpointLogs = pgTable(
       .references(() => checkins.id, { onDelete: 'cascade' }),
     responderId: uuid('responder_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: 'cascade' }),
     type: touchpointType('type').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

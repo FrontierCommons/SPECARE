@@ -39,10 +39,20 @@ export class AuthRepo {
   async updateProfile(
     exec: Executor,
     id: string,
-    patch: { notificationsPaused?: boolean; timezone?: string; checkinFrequency?: CheckInFrequency },
+    patch: {
+      notificationsPaused?: boolean;
+      timezone?: string;
+      checkinFrequency?: CheckInFrequency;
+      avatarUrl?: string | null;
+    },
   ): Promise<UserRow> {
     const [row] = await exec.update(users).set(patch).where(eq(users.id, id)).returning();
     return row!;
+  }
+
+  /** Cascades handle every dependent row (see db/schema.ts's onDelete clauses) — this is the only query needed. */
+  async deleteUser(exec: Executor, id: string): Promise<void> {
+    await exec.delete(users).where(eq(users.id, id));
   }
 
   async updatePasswordHash(exec: Executor, id: string, passwordHash: string): Promise<UserRow> {

@@ -15,6 +15,10 @@ interface SessionState {
   circles: MyCircleDTO[];
   /** True once we've asked the server which circle (if any) this user has. */
   circlesReady: boolean;
+  /** Null while the local flag is still loading; RootGate waits on that before deciding whether to show the tutorial. */
+  tutorialSeen: boolean | null;
+  /** Persists the flag and flips the in-memory value in the same tick, so RootGate reacts immediately instead of racing a storage re-read. */
+  markTutorialSeen: () => Promise<void>;
   setUser: (u: UserDTO | null) => void;
   setActiveCircle: (id: string | null) => void;
   /** Web-only: lets the onboarding join/create step hand its freshly-created
@@ -24,9 +28,15 @@ interface SessionState {
   /** Re-fetch the member's circle list — call after joining or leaving one. */
   refreshCircles: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Deletes the account server-side, then clears local state exactly like signOut. */
+  deleteAccount: () => Promise<void>;
 }
 
 const CIRCLE_KEY = 'sper.activeCircle';
+// Keyed per-account (not a single shared key) so a new sign-up in the same
+// browser still gets the tutorial — seeing it once shouldn't stick to the
+// device forever if that device later creates a second account.
+const tutorialKey = (userId: string) => `sper.tutorialSeen.${userId}`;
 const SessionContext = createContext<SessionState | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -36,6 +46,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [pendingCircleId, setPendingCircleId] = useState<string | null>(null);
   const [circles, setCircles] = useState<MyCircleDTO[]>([]);
   const [circlesReady, setCirclesReady] = useState(false);
+  const [tutorialSeen, setTutorialSeen] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -51,6 +62,30 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
     })();
   }, []);
+
+  // Re-checked whenever the signed-in account changes — signing out and
+  // creating a second account in the same browser must not inherit the
+  // first account's "already seen" flag.
+  useEffect(() => {
+    if (!user) {
+      setTutorialSeen(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const seen = (await storage.getItem(tutorialKey(user.id))) != null;
+      if (!cancelled) setTutorialSeen(seen);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const markTutorialSeen = useCallback(async () => {
+    if (!user) return;
+    setTutorialSeen(true); // flip immediately so RootGate's redirect effect doesn't race the storage write
+    await storage.setItem(tutorialKey(user.id), '1');
+  }, [user]);
 
   // Fetches this user's full circle list and picks which one is active.
   // A previously-selected circle (persisted locally) wins as long as it's
@@ -126,6 +161,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setCircles([]);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteAccount();
+    await api.signOut(); // clears local tokens — the account is already gone server-side
+    await storage.removeItem(CIRCLE_KEY);
+    setUser(null);
+    setActiveCircleId(null);
+    setPendingCircleId(null);
+    setCircles([]);
+  }, []);
+
   return (
     <SessionContext.Provider
       value={{
@@ -135,11 +180,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         pendingCircleId,
         circles,
         circlesReady,
+        tutorialSeen,
+        markTutorialSeen,
         setUser,
         setActiveCircle,
         setPendingCircle: setPendingCircleId,
         refreshCircles: loadCircles,
         signOut,
+        deleteAccount,
       }}
     >
       {children}

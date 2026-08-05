@@ -80,6 +80,8 @@ export interface UpdateProfileRequest {
   notifications_paused?: boolean;
   timezone?: string;
   checkin_frequency?: CheckInFrequency;
+  /** Data URI of a resized (~256px) JPEG, or null to remove the photo. */
+  avatar_url?: string | null;
 }
 
 /* ------------------------------ Circles ------------------------------- */

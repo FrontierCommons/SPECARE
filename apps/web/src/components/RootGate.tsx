@@ -8,7 +8,8 @@ import { color } from '../design/tokens';
 
 const AUTH_PATH = '/auth';
 const ROOT_PATH = '/';
-const ONBOARDING_PATHS = ['/onboarding/timezone', '/onboarding/join', '/onboarding/pact'];
+const TUTORIAL_PATH = '/onboarding/tutorial';
+const ONBOARDING_PATHS = [TUTORIAL_PATH, '/onboarding/timezone', '/onboarding/join', '/onboarding/pact'];
 const APP_HOME = '/today';
 
 /**
@@ -18,20 +19,28 @@ const APP_HOME = '/today';
  * instead, so URLs stay bookmarkable/refresh-safe. Mounted once in the root
  * layout so every route is covered.
  *
- *   not signed in                      -> /auth
- *   signed in, checking circle status  -> loading
- *   signed in, no circle yet at all    -> /onboarding/timezone
- *   signed in, circle pact unfinished  -> /onboarding/pact
- *   signed in, active circle           -> /today (unless already elsewhere in the app)
+ *   not signed in                          -> /auth
+ *   signed in, checking circle status      -> loading
+ *   signed in, brand new, tutorial unseen   -> /onboarding/tutorial
+ *   signed in, no circle yet                -> /onboarding/timezone
+ *   signed in, circle pact unfinished       -> /onboarding/pact
+ *   signed in, active circle                -> /today (unless already elsewhere in the app)
+ *
+ * The tutorial only intercepts a truly first-time user: once they've made
+ * any progress (a pendingCircleId, i.e. already past timezone/join) it stops
+ * inserting itself, so it can't re-interrupt someone mid-setup just because
+ * this device never recorded seeing it.
  */
 export function RootGate({ children }: { children: React.ReactNode }) {
-  const { ready, user, activeCircleId, pendingCircleId, circlesReady } = useSession();
+  const { ready, user, activeCircleId, pendingCircleId, circlesReady, tutorialSeen } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (ready && user) void flushQueue(); // best-effort flush of any offline check-ins
   }, [ready, user]);
+
+  const showTutorialFirst = tutorialSeen === false && !pendingCircleId;
 
   useEffect(() => {
     if (!ready) return;
@@ -41,10 +50,14 @@ export function RootGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!circlesReady) return;
+    if (!circlesReady || tutorialSeen === null) return;
 
     if (!activeCircleId) {
-      if (!ONBOARDING_PATHS.includes(pathname)) {
+      if (showTutorialFirst) {
+        if (pathname !== TUTORIAL_PATH) router.replace(TUTORIAL_PATH);
+        return;
+      }
+      if (!ONBOARDING_PATHS.includes(pathname) || pathname === TUTORIAL_PATH) {
         router.replace(pendingCircleId ? '/onboarding/pact' : '/onboarding/timezone');
       }
       return;
@@ -56,12 +69,15 @@ export function RootGate({ children }: { children: React.ReactNode }) {
     if (pathname === AUTH_PATH || pathname === ROOT_PATH || ONBOARDING_PATHS.includes(pathname)) {
       router.replace(APP_HOME);
     }
-  }, [ready, user, circlesReady, activeCircleId, pendingCircleId, pathname, router]);
+  }, [ready, user, circlesReady, activeCircleId, pendingCircleId, tutorialSeen, showTutorialFirst, pathname, router]);
 
   if (!ready) return <Spinner />;
   if (!user) return pathname === AUTH_PATH ? <>{children}</> : <Spinner />;
-  if (!circlesReady) return <Spinner />;
-  if (!activeCircleId) return ONBOARDING_PATHS.includes(pathname) ? <>{children}</> : <Spinner />;
+  if (!circlesReady || tutorialSeen === null) return <Spinner />;
+  if (!activeCircleId) {
+    if (showTutorialFirst) return pathname === TUTORIAL_PATH ? <>{children}</> : <Spinner />;
+    return ONBOARDING_PATHS.includes(pathname) && pathname !== TUTORIAL_PATH ? <>{children}</> : <Spinner />;
+  }
   if (pathname === AUTH_PATH || pathname === ROOT_PATH || ONBOARDING_PATHS.includes(pathname)) return <Spinner />;
   return <>{children}</>;
 }

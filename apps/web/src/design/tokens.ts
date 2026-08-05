@@ -35,6 +35,12 @@ export const color = {
   bloom: '#E0984A', // warm orange glow
   bloomSoft: 'rgba(224,152,74,0.22)',
 
+  // A real, harsh red — deliberately outside the state-color philosophy
+  // above. Reserved exclusively for irreversible account actions (delete my
+  // account), never for a feelings/state display.
+  destructive: '#E5484D',
+  destructiveSoft: 'rgba(229,72,77,0.16)',
+
   // The tree card's own backdrop — brighter and warm when the tree is
   // healthy, dimmer and duller when it's withering. A mood, not a chart.
   treeCardHealthy: '#166b44',
