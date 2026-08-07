@@ -4,10 +4,12 @@
  * SPER. No message is ever sent from inside the app.
  *
  * Web port of apps/mobile/src/lib/deeplink.ts: `whatsapp://` becomes the
- * `https://wa.me/` web link, `sms:`/`tel:` remain plain anchors. There is no
- * browser equivalent of RN's `Linking.canOpenURL` pre-check, so these always
- * attempt the navigation and report success optimistically — an accepted UX
- * regression versus mobile, not something fixable on the web.
+ * `https://wa.me/` web link. `sms:` has no reliable browser equivalent of
+ * RN's `Linking.canOpenURL` and is simply unhandled on desktop (no SMS app
+ * registered), so `openMessage` no longer relies on it as the primary path —
+ * it prefers the OS-level Web Share sheet (works on both mobile and most
+ * modern desktop browsers), then clipboard, and only falls back to the raw
+ * `sms:` link as a last resort.
  */
 
 function encode(text: string): string {
@@ -22,10 +24,36 @@ export async function openWhatsApp(text: string, phone?: string): Promise<boolea
   return true;
 }
 
-export async function openMessage(text: string, phone?: string): Promise<boolean> {
+/**
+ * `shared` — the OS share sheet completed. `copied` — no share sheet
+ * available, but the message is on the clipboard. `cancelled` — the person
+ * backed out of the share sheet, so nothing was sent or copied and no
+ * touchpoint should be logged. `attempted` — last-resort raw `sms:` link,
+ * fired blind since there's no way to confirm it landed.
+ */
+export type MessageOutcome = 'shared' | 'copied' | 'cancelled' | 'attempted';
+
+export async function openMessage(text: string, phone?: string): Promise<MessageOutcome> {
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ text });
+      return 'shared';
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+      // Some other Web Share failure (e.g. no share target registered) — fall through.
+    }
+  }
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return 'copied';
+    } catch {
+      // Clipboard unavailable — fall through to the raw sms: link below.
+    }
+  }
   const base = phone ? `sms:${phone}` : 'sms:';
   window.location.href = `${base}?body=${encode(text)}`;
-  return true;
+  return 'attempted';
 }
 
 export async function openCall(phone: string): Promise<boolean> {

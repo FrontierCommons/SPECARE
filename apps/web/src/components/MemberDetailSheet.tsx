@@ -16,9 +16,9 @@ interface Props {
   careCard?: CareCardDTO;
   /** True when the viewer is looking at their own check-in. */
   isSelf?: boolean;
-  /** Names of people who've sent a voice note for this check-in — the only
-   * touchpoint type the Care Card's "already reached out" line counts. */
-  voiceNoteResponders?: string[];
+  /** Names of people who've reached out (any touchpoint type) for this
+   * check-in — feeds the Care Card's "already reached out" line. */
+  alreadyReached?: string[];
   /** Touchpoints of any kind, for the self-view tree's care count. */
   touchpointCount?: number;
   onLogCare: (type: TouchpointType) => void;
@@ -47,7 +47,7 @@ export function MemberDetailSheet({
   entry,
   careCard,
   isSelf,
-  voiceNoteResponders,
+  alreadyReached,
   touchpointCount,
   onLogCare,
   onSendVoiceNote,
@@ -113,7 +113,7 @@ export function MemberDetailSheet({
               card={careCard}
               onLogCare={onLogCare}
               onSendVoiceNote={onSendVoiceNote}
-              alreadyReached={voiceNoteResponders}
+              alreadyReached={alreadyReached}
             />
           ) : null}
         </div>

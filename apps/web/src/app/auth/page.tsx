@@ -1,15 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, ApiError } from '../../api/client';
 import { useSession } from '../../state/session';
 import { color, type } from '../../design/tokens';
 import { strings } from '../../design/strings';
+import { styleText } from 'util';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
 const titleStyle = { ...type.display, color: color.textPrimary, letterSpacing: 4 };
-const taglineStyle = { ...type.body, color: color.textSecondary };
+const taglineStyle = { ...type.body, color: color.textPrimary };
+const verseStyle = { ...type.body, color: color.sage};
 const headingStyle = { ...type.title, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
 const labelStyle = { ...type.caption, color: color.textSecondary };
@@ -17,7 +19,10 @@ const inputTextStyle = { ...type.body, color: color.textPrimary };
 const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const linkStyle = { ...type.label, color: color.sage };
 const linkSubtleStyle = { ...type.caption, color: color.textMuted };
-const errorStyle = { ...type.caption, color: color.statePit };
+// Real red, not the muted mood-state plum — an auth failure is an actual
+// error, not a feelings display, and needs to read clearly distinct from
+// the sage-green info text below it.
+const errorStyle = { ...type.caption, color: color.destructive, fontWeight: 600 as const };
 const infoStyle = { ...type.caption, color: color.sage };
 
 export default function AuthPage() {
@@ -34,15 +39,37 @@ export default function AuthPage() {
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  /**
+   * Reads a field straight off the DOM instead of trusting React state.
+   * Chrome/Edge's "suggest a strong password" autofill sometimes sets the
+   * input's value without firing a change event React can see, so state can
+   * go stale while the field visibly (and correctly) holds the generated
+   * password — submitting the stale state then fails backend validation.
+   * The live DOM value is always what's actually about to be submitted.
+   */
+  const liveValue = (fieldName: string, fallback: string): string => {
+    const el = formRef.current?.elements.namedItem(fieldName);
+    return el instanceof HTMLInputElement ? el.value : fallback;
+  };
+
   const submit = async () => {
     setError(null);
     setBusy(true);
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+      const liveEmail = liveValue('email', email);
+      const livePassword = liveValue('password', password);
       const res =
         mode === 'signup'
-          ? await api.register({ name, email, password, timezone: tz })
-          : await api.login({ email, password });
+          ? await api.register({
+              name: liveValue('name', name),
+              email: liveEmail,
+              password: livePassword,
+              timezone: tz,
+            })
+          : await api.login({ email: liveEmail, password: livePassword });
       setUser(res.user);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : strings.common.error);
@@ -54,7 +81,7 @@ export default function AuthPage() {
   const magic = async () => {
     setError(null);
     try {
-      await api.requestMagicLink(email);
+      await api.requestMagicLink(liveValue('email', email));
       setMagicSent(true);
     } catch {
       setMagicSent(true); // never reveal whether the email exists
@@ -73,7 +100,7 @@ export default function AuthPage() {
     setError(null);
     setBusy(true);
     try {
-      await api.requestPasswordReset(email);
+      await api.requestPasswordReset(liveValue('email', email));
     } catch {
       // never reveal whether the email exists
     } finally {
@@ -86,7 +113,9 @@ export default function AuthPage() {
     setError(null);
     setBusy(true);
     try {
-      const res = await api.confirmPasswordReset(resetCode.trim(), newPassword);
+      const code = liveValue('resetCode', resetCode).trim();
+      const pw = liveValue('newPassword', newPassword);
+      const res = await api.confirmPasswordReset(code, pw);
       setUser(res.user);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : strings.common.error);
@@ -96,14 +125,14 @@ export default function AuthPage() {
   };
 
   return (
-    <div
-      className="relative min-h-screen bg-bg bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/background.jpg')" }}
-    >
-      {/* A light wash, not a dark one — brightens the photo instead of hiding it. */}
-      <div className="absolute inset-0 bg-white opacity-[0.08]" />
-      <div className="relative flex min-h-screen items-center justify-center overflow-y-auto p-lg">
+    <div className="grid min-h-screen grid-cols-1 md:grid-cols-[65%_35%]">
+      <div
+        className="hidden bg-cover bg-center md:block"
+        style={{ backgroundImage: "url('/images/background2.avif')" }}
+      />
+      <div className="flex min-h-screen items-center justify-center overflow-y-auto bg-bg p-lg">
         <form
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             if (mode === 'reset') void (resetSent ? confirmReset() : requestReset());
@@ -112,8 +141,14 @@ export default function AuthPage() {
           className="flex w-full max-w-md flex-col gap-md"
         >
           <h1 style={titleStyle}>{strings.app.name}</h1>
-          <p style={taglineStyle} className="mb-lg">
-            {strings.app.tagline}
+          <p style={taglineStyle}>{strings.app.tagline}</p>
+          
+          <p style={bodyStyle} className="mb-lg">
+            {strings.auth.pitchBody}
+          </p>
+
+          <p style={verseStyle} className="mb-lg italic">
+            {strings.auth.verse}
           </p>
 
           {mode === 'reset' ? (
@@ -122,6 +157,7 @@ export default function AuthPage() {
               <p style={bodyStyle}>{resetSent ? strings.auth.resetSent : strings.auth.resetBody}</p>
 
               <Field
+                name="email"
                 label={strings.auth.email}
                 type="email"
                 autoComplete="email"
@@ -132,10 +168,17 @@ export default function AuthPage() {
 
               {resetSent ? (
                 <>
-                  <Field label={strings.auth.resetCode} value={resetCode} onChange={setResetCode} />
                   <Field
+                    name="resetCode"
+                    label={strings.auth.resetCode}
+                    value={resetCode}
+                    onChange={setResetCode}
+                  />
+                  <Field
+                    name="newPassword"
                     label={strings.auth.newPassword}
                     type="password"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={setNewPassword}
                   />
@@ -159,9 +202,16 @@ export default function AuthPage() {
               <h2 style={headingStyle}>{mode === 'signup' ? strings.auth.signUpTitle : strings.auth.signInTitle}</h2>
 
               {mode === 'signup' && (
-                <Field label={strings.auth.name} value={name} onChange={setName} autoComplete="name" />
+                <Field
+                  name="name"
+                  label={strings.auth.name}
+                  value={name}
+                  onChange={setName}
+                  autoComplete="name"
+                />
               )}
               <Field
+                name="email"
                 label={strings.auth.email}
                 type="email"
                 autoComplete="email"
@@ -169,6 +219,7 @@ export default function AuthPage() {
                 onChange={setEmail}
               />
               <Field
+                name="password"
                 label={strings.auth.password}
                 type="password"
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
@@ -211,6 +262,7 @@ export default function AuthPage() {
 }
 
 function Field({
+  name,
   label,
   value,
   onChange,
@@ -218,6 +270,7 @@ function Field({
   autoComplete,
   disabled,
 }: {
+  name: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -229,6 +282,7 @@ function Field({
     <label className="flex flex-col gap-xs">
       <span style={labelStyle}>{label}</span>
       <input
+        name={name}
         type={inputType}
         value={value}
         autoComplete={autoComplete}

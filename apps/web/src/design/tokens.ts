@@ -25,9 +25,9 @@ export const color = {
   amber: '#c7a923', // muted amber — warmth, not alarm
 
   // State colors — weather, not a scoreboard.
-  stateThriving: '#47c437', // clear sky (sage)
+  stateThriving: '#368c2a', // clear sky (sage)
   stateSteady: '#369ece', // calm blue
-  stateHeavy: '#c8935e', // overcast amber
+  stateHeavy: '#d2a477', // overcast amber
   statePit: '#bba6af', // muted storm plum (never a harsh red)
 
   // Warmth accent — reserved for encouragement: the one place the app should
@@ -53,10 +53,10 @@ export const stateVisual: Record<
   StateLevel,
   { color: string; icon: string; label: string }
 > = {
-  Thriving: { color: color.stateThriving, icon: '◒', label: 'Thriving' },
-  Steady: { color: color.stateSteady, icon: '◑', label: 'Steady' },
-  Heavy: { color: color.stateHeavy, icon: '◐', label: 'Heavy' },
-  'In the Pit': { color: color.statePit, icon: '●', label: 'In the Pit' },
+  Thriving: { color: color.stateThriving, icon: '🌳', label: 'Thriving' },
+  Steady: { color: color.stateSteady, icon: '🌿', label: 'Steady' },
+  Heavy: { color: color.stateHeavy, icon: '🍂', label: 'Heavy' },
+  'In the Pit': { color: color.statePit, icon: '🌱', label: 'In the Pit' },
 };
 
 export const space = {

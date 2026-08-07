@@ -140,7 +140,11 @@ export default function CheckInPage() {
         {DIMENSIONS.slice(0, step).map((dim) => (
           <Fragment key={dim}>
             <ChatBubble from="bot" text={strings.checkIn.botQuestions[dim]} />
-            <ChatBubble from="user" text={sel[dim]!} />
+            <ChatBubble
+              from="user"
+              text={strings.checkIn.answerLabels[dim][sel[dim]!]}
+              bubbleColor={stateVisual[sel[dim]!].color}
+            />
           </Fragment>
         ))}
 
@@ -150,17 +154,18 @@ export default function CheckInPage() {
             <div className="mt-xs flex gap-xs">
               {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
                 const v = stateVisual[level];
+                const label = strings.checkIn.answerLabels[DIMENSIONS[step]!][level];
                 return (
                   <button
                     key={level}
                     onClick={() => answer(DIMENSIONS[step]!, level)}
-                    aria-label={v.label}
+                    aria-label={label}
                     className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-md"
                     style={{ backgroundColor: v.color }}
                   >
                     <span style={{ fontSize: 22, color: color.bg }}>{v.icon}</span>
                     <span style={optionLabelStyle} className="text-center">
-                      {v.label}
+                      {label}
                     </span>
                   </button>
                 );

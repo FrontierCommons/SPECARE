@@ -13,7 +13,16 @@ const userTextStyle = { ...type.body, fontSize: 17, color: color.bg, fontWeight:
  * component instance when it's added to the transcript, so a mount-time
  * CSS transition is enough to animate every new message as it arrives.
  */
-export function ChatBubble({ from, text }: { from: 'bot' | 'user'; text: string }) {
+export function ChatBubble({
+  from,
+  text,
+  bubbleColor,
+}: {
+  from: 'bot' | 'user';
+  text: string;
+  /** Overrides the default bubble background — used to echo the state color of a user's answer. */
+  bubbleColor?: string;
+}) {
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));
@@ -30,6 +39,7 @@ export function ChatBubble({ from, text }: { from: 'bot' | 'user'; text: string 
         className={`max-w-[82%] rounded-lg px-md py-sm ${
           from === 'bot' ? 'rounded-bl-sm bg-surface' : 'rounded-br-sm bg-sage'
         }`}
+        style={from === 'user' && bubbleColor ? { backgroundColor: bubbleColor } : undefined}
       >
         <span style={from === 'user' ? userTextStyle : botTextStyle}>{text}</span>
       </div>

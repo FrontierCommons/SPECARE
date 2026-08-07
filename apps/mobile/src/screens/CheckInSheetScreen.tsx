@@ -131,7 +131,11 @@ export function CheckInSheetScreen({
         {DIMENSIONS.slice(0, step).map((dim) => (
           <React.Fragment key={dim}>
             <ChatBubble from="bot" text={strings.checkIn.botQuestions[dim]} />
-            <ChatBubble from="user" text={sel[dim]!} bubbleColor={stateVisual[sel[dim]!].color} />
+            <ChatBubble
+              from="user"
+              text={strings.checkIn.answerLabels[dim][sel[dim]!]}
+              bubbleColor={stateVisual[sel[dim]!].color}
+            />
           </React.Fragment>
         ))}
 
@@ -141,13 +145,14 @@ export function CheckInSheetScreen({
             <View style={styles.options}>
               {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
                 const v = stateVisual[level];
+                const label = strings.checkIn.answerLabels[DIMENSIONS[step]!][level];
                 return (
                   <Touchable
                     key={level}
                     onPress={() => answer(DIMENSIONS[step]!, level)}
                     style={[styles.option, { backgroundColor: v.color }]}
                     accessibilityRole="button"
-                    accessibilityLabel={v.label}
+                    accessibilityLabel={label}
                   >
                     <Text style={[styles.optionIcon, { color: color.bg }]}>{v.icon}</Text>
                     <Text
@@ -156,7 +161,7 @@ export function CheckInSheetScreen({
                       adjustsFontSizeToFit
                       minimumFontScale={0.75}
                     >
-                      {v.label}
+                      {label}
                     </Text>
                   </Touchable>
                 );

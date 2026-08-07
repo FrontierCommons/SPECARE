@@ -157,7 +157,7 @@ function CareCardWithLog({ circleId, card }: { circleId: string; card: CareCardD
   const logCare = useLogTouchpoint(circleId, card.checkin_id);
   const sendVoiceNote = useSendVoiceNote(circleId, card.checkin_id);
   const touchpoints = useTouchpoints(card.checkin_id);
-  const alreadyReached = reachedNames(touchpoints.data, user?.id, 'VoiceNoteSent');
+  const alreadyReached = reachedNames(touchpoints.data, user?.id);
   return (
     <CareCard
       card={card}
@@ -196,14 +196,14 @@ function MemberDetailSheetWithLog({
   const logCare = useLogTouchpoint(circleId, checkinId);
   const sendVoiceNote = useSendVoiceNote(circleId, checkinId);
   const touchpoints = useTouchpoints(checkinId);
-  const voiceNoteResponders = reachedNames(touchpoints.data, user?.id, 'VoiceNoteSent');
+  const alreadyReached = reachedNames(touchpoints.data, user?.id);
   useNewPrayerAlert(isSelf ? touchpoints.data : undefined, onPrayed);
   return (
     <MemberDetailSheet
       entry={entry}
       careCard={careCard}
       isSelf={isSelf}
-      voiceNoteResponders={voiceNoteResponders}
+      alreadyReached={alreadyReached}
       touchpointCount={touchpoints.data?.length ?? 0}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
       onSendVoiceNote={(input) =>

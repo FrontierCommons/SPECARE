@@ -33,10 +33,16 @@ export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: P
   const prefill = outreachPrefill(card.target_name);
   const selfReached = alreadyReached?.includes('You') ?? false;
   const [recorderVisible, setRecorderVisible] = useState(false);
+  const [showCopiedNotice, setShowCopiedNotice] = useState(false);
 
   const sendMsg = async () => {
-    const opened = await openMessage(prefill);
-    if (opened) onLogCare('TextSent');
+    const outcome = await openMessage(prefill);
+    if (outcome === 'cancelled') return;
+    onLogCare('TextSent');
+    if (outcome === 'copied') {
+      setShowCopiedNotice(true);
+      setTimeout(() => setShowCopiedNotice(false), 4000);
+    }
   };
 
   if (card.gratitude_shown) {
@@ -82,6 +88,12 @@ export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: P
         <p style={selfReached ? reachedSelfStyle : reachedStyle} className="text-center">
           {selfReached ? '✓ ' : ''}
           {strings.care.alreadyReached(alreadyReached.join(', '))}
+        </p>
+      ) : null}
+
+      {showCopiedNotice ? (
+        <p style={reachedSelfStyle} className="text-center">
+          {strings.care.messageCopied}
         </p>
       ) : null}
 

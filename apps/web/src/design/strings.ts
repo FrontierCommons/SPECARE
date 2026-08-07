@@ -7,7 +7,8 @@
 export const strings = {
   app: {
     name: 'SPECARE',
-    tagline: 'Speak your care! Stay close through the distance.',
+    tagline: 'SPEak your CARE! Friends connected! Faith rooted!',
+    
   },
 
   nav: {
@@ -18,6 +19,9 @@ export const strings = {
   },
 
   auth: {
+    pitchBody:
+      'A small circle of friends, be honest about spiritual, physical, emotional, work, and relational. When someone’s having a hard season, there are some who love you and care for you with a voice note, a message, or a prayer.',
+    verse: "A friend loves at all times, and a brother is born for adversity. Proverbs 17:17",
     signInTitle: 'Welcome back',
     signUpTitle: 'Create your account',
     email: 'Email',
@@ -88,11 +92,19 @@ export const strings = {
     },
     botIntro: 'Hey — quick check-in. Just five taps, honestly answered.',
     botQuestions: {
-      spiritual: 'How’s your relationship with God now?',
-      physical: 'How’s your body feeling now?',
-      emotional: 'How are you feeling now?',
-      vocational: 'How’s work or life direction sitting with you?',
-      relational: 'How connected do you feel to the people around you?',
+      spiritual: '🙏 How close do you feel to God right now?',
+      physical: '💪 How is your body doing right now?',
+      emotional: '❤️ How is your heart doing right now?',
+      vocational: '💼 How are you feeling about your work or life direction?',
+      relational: '🤝 How connected do you feel to the people around you?',
+    },
+    /** Per-dimension answer copy for the same four underlying state levels — same weather, different words for each part of life. */
+    answerLabels: {
+      spiritual: { Thriving: 'Thriving', Steady: 'Steady', Heavy: 'Struggling', 'In the Pit': 'In the Pit' },
+      physical: { Thriving: 'Strong', Steady: 'Doing OK', Heavy: 'Running Low', 'In the Pit': 'Drained' },
+      emotional: { Thriving: 'Thriving', Steady: 'Steady', Heavy: 'Heavy', 'In the Pit': 'In the Pit' },
+      vocational: { Thriving: 'Confident', Steady: 'Steady', Heavy: 'Uncertain', 'In the Pit': 'Lost' },
+      relational: { Thriving: 'Deeply Connected', Steady: 'Connected', Heavy: 'Disconnected', 'In the Pit': 'Isolated' },
     },
     botNotePrompt: 'Anything you want to add? Totally optional.',
     botOutro: 'Got it. Sending this to your circle.',
@@ -115,6 +127,7 @@ export const strings = {
     call: 'Call',
     pray: 'I prayed',
     logCare: 'I reached out',
+    messageCopied: 'Copied — paste it into your messaging app.',
     alreadyReached: (names: string) => `${names} already reached out`,
     acked: (name: string) => `${name} stepped up to hold space for you today.`,
     thankYou: 'Thank you!',
@@ -154,6 +167,13 @@ export const strings = {
     notifications: 'Notifications',
     notificationsBody: 'Pause your daily check-in nudge without leaving your circle.',
     pauseNudge: 'Pause daily nudge',
+    browserNotifications: 'Browser notifications',
+    browserNotificationsBody: 'Get a notification here when it’s time for your check-in.',
+    browserNotificationsBlocked:
+      'Blocked in your browser’s site settings. Allow notifications for this site to turn it on.',
+    browserNotificationsEnabled: 'Enabled ✓',
+    enableBrowserNotifications: 'Enable',
+    browserNotificationsFailed: "Couldn't enable notifications. Try again.",
     timezone: 'Timezone',
     frequency: 'Check-in frequency',
     frequencyBody: 'How often should we prompt you to check in?',
