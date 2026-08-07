@@ -4,7 +4,7 @@ import { db, type DB } from '../config/db';
 import { users } from '../db/schema';
 import { deviceRepo } from '../modules/users/devices.repo';
 import { pushProvider, type PushProvider } from '../delivery/push.provider';
-import type { CheckInFrequency } from '@sper/shared-types';
+import type { CheckInFrequency, DevicePlatform } from '@sper/shared-types';
 
 /** Local hour (24h) at which the daily Sper prompt should fire. */
 export const PROMPT_LOCAL_HOUR = 9;
@@ -61,7 +61,7 @@ export class DevicePromptSender implements PromptSender {
     for (const t of tokens) {
       await this.push.send({
         token: t.token,
-        platform: t.platform as 'ios' | 'android',
+        platform: t.platform as DevicePlatform,
         title: 'Time for your 15-second Sper update',
         body: 'A quick check-in with your circle. Tap to begin.',
         data: { type: 'sper_prompt' },

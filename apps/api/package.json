@@ -16,9 +16,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@sper/shared-types": "workspace:*",
     "@fastify/cors": "^9.0.1",
     "@parse/node-apn": "^6.3.0",
+    "@sper/shared-types": "workspace:*",
     "argon2": "^0.40.3",
     "bullmq": "^5.12.0",
     "drizzle-orm": "^0.33.0",
@@ -29,6 +29,7 @@
     "luxon": "^3.5.0",
     "nodemailer": "^6.9.14",
     "pg": "^8.12.0",
+    "web-push": "^3.6.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@types/node": "^20.14.0",
     "@types/nodemailer": "^6.4.15",
     "@types/pg": "^8.11.6",
+    "@types/web-push": "^3.6.4",
     "dotenv": "^16.4.7",
     "drizzle-kit": "^0.24.0",
     "tsx": "^4.16.0",

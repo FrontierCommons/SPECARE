@@ -20,18 +20,22 @@ const CHECKIN_INTERVAL_HOURS: Record<CheckInFrequency, number> = {
 };
 
 /**
- * Countdown text to the next scheduled check-in, e.g. "3h 42m" or "any time
- * now" once the interval has already elapsed. Derived from the last check-in
- * timestamp and the member's chosen cadence — there's no server-side "next
- * prompt" field to read. Ported from apps/mobile/src/lib/time.ts.
+ * Real-time countdown text to the next scheduled check-in, ticking down to
+ * the second — e.g. "3h 42m 17s", "42m 17s", "17s", or "any time now" once
+ * the interval has already elapsed. Derived from the last check-in timestamp
+ * and the member's chosen cadence — there's no server-side "next prompt"
+ * field to read.
  */
 export function nextCheckInCountdown(lastCheckInIso: string, frequency: CheckInFrequency): string {
   const intervalMs = CHECKIN_INTERVAL_HOURS[frequency] * 60 * 60 * 1000;
   const diffMs = new Date(lastCheckInIso).getTime() + intervalMs - Date.now();
   if (diffMs <= 0) return 'any time now';
-  const totalMin = Math.ceil(diffMs / 60_000);
-  const hr = Math.floor(totalMin / 60);
-  const min = totalMin % 60;
-  if (hr < 1) return `${min}m`;
-  return `${hr}h ${min}m`;
+  const totalSec = Math.floor(diffMs / 1000);
+  const hr = Math.floor(totalSec / 3600);
+  const min = Math.floor((totalSec % 3600) / 60);
+  const sec = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  if (hr > 0) return `${hr}h ${pad(min)}m ${pad(sec)}s`;
+  if (min > 0) return `${min}m ${pad(sec)}s`;
+  return `${sec}s`;
 }

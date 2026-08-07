@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CheckInFrequency } from '@sper/shared-types';
 import { useSession } from '../../../state/session';
 import { useUpdateProfile } from '../../../api/hooks';
@@ -8,6 +8,7 @@ import { Avatar } from '../../../components/Avatar';
 import { TutorialModal } from '../../../components/TutorialModal';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { resizeImageToSquareDataUrl } from '../../../lib/resizeImage';
+import { enablePushNotifications, getPushStatus, type PushStatus } from '../../../lib/push';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
@@ -51,8 +52,29 @@ export default function SettingsPage() {
   const [photoError, setPhotoError] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pushStatus, setPushStatus] = useState<PushStatus | 'checking'>('checking');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState(false);
+
+  useEffect(() => {
+    void getPushStatus().then(setPushStatus);
+  }, []);
 
   if (!user) return null;
+
+  const enablePush = async () => {
+    setPushBusy(true);
+    setPushError(false);
+    try {
+      await enablePushNotifications();
+      setPushStatus('subscribed');
+    } catch {
+      setPushError(true);
+      setPushStatus(await getPushStatus());
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const togglePause = () => {
     const paused = !user.notifications_paused;
@@ -165,6 +187,31 @@ export default function SettingsPage() {
             />
           </button>
         </div>
+
+        {pushStatus !== 'unsupported' ? (
+          <div className="flex items-center justify-between gap-md rounded-md bg-surface p-md shadow-sm">
+            <div className="flex-1">
+              <p style={rowLabelStyle}>{strings.settings.browserNotifications}</p>
+              <p style={rowBodyStyle}>
+                {pushStatus === 'denied'
+                  ? strings.settings.browserNotificationsBlocked
+                  : strings.settings.browserNotificationsBody}
+              </p>
+              {pushError ? <p style={errorTextStyle}>{strings.settings.browserNotificationsFailed}</p> : null}
+            </div>
+            {pushStatus === 'subscribed' ? (
+              <span style={rowValueStyle}>{strings.settings.browserNotificationsEnabled}</span>
+            ) : pushStatus === 'checking' ? null : (
+              <button
+                onClick={() => void enablePush()}
+                disabled={pushBusy || pushStatus === 'denied'}
+                className="shrink-0 rounded-md border border-sage px-md py-sm disabled:opacity-50"
+              >
+                <span style={linkTextStyle}>{strings.settings.enableBrowserNotifications}</span>
+              </button>
+            )}
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between rounded-md bg-surface p-md shadow-sm">
           <span style={rowLabelStyle}>{strings.settings.timezone}</span>

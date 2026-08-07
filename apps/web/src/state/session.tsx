@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import * as storage from '../lib/storage';
 import { api } from '../api/client';
+import { resyncPushSubscription } from '../lib/push';
 import type { MyCircleDTO, UserDTO } from '@sper/shared-types';
 
 interface SessionState {
@@ -62,6 +63,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
     })();
   }, []);
+
+  // If this browser already has a push subscription (from a previous
+  // explicit opt-in), re-point it at whoever's signed in now — otherwise a
+  // second account on a shared browser would keep sending pushes to the
+  // first account's session. Never prompts for permission on its own.
+  useEffect(() => {
+    if (user?.id) void resyncPushSubscription();
+  }, [user?.id]);
 
   // Re-checked whenever the signed-in account changes — signing out and
   // creating a second account in the same browser must not inherit the

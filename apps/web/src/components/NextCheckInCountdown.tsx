@@ -6,12 +6,12 @@ import { nextCheckInCountdown } from '../lib/time';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
-const TICK_MS = 30_000;
+const TICK_MS = 1_000;
 
 const textStyle = { ...type.label, fontSize: type.label.fontSize - 2, color: color.textPrimary };
 
-/** Live "time until your next check-in" line, shown once today's is in.
- * Ported from apps/mobile/src/components/NextCheckInCountdown.tsx. */
+/** Live, real-time "time until your next check-in" line, ticking down to the
+ * second, shown once today's check-in is in. */
 export function NextCheckInCountdown({
   lastCheckInAt,
   frequency,

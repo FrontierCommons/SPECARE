@@ -33,8 +33,10 @@ export interface PushProvider {
 export class DefaultPushProvider implements PushProvider {
   private apns: PushProvider | null = null;
   private fcm: PushProvider | null = null;
+  private webPush: PushProvider | null = null;
   private apnsReady = false;
   private fcmReady = false;
+  private webPushReady = false;
 
   private async iosProvider(): Promise<PushProvider | null> {
     if (this.apnsReady) return this.apns;
@@ -52,11 +54,21 @@ export class DefaultPushProvider implements PushProvider {
     return this.fcm;
   }
 
+  private async webProvider(): Promise<PushProvider | null> {
+    if (this.webPushReady) return this.webPush;
+    this.webPushReady = true;
+    const { WebPushProvider } = await import('./webpush.provider');
+    if (WebPushProvider.isConfigured()) this.webPush = new WebPushProvider();
+    return this.webPush;
+  }
+
   async send(message: PushMessage): Promise<PushResult> {
     const real =
       message.platform === 'ios'
         ? await this.iosProvider()
-        : await this.androidProvider();
+        : message.platform === 'android'
+          ? await this.androidProvider()
+          : await this.webProvider();
 
     if (real) return real.send(message);
 

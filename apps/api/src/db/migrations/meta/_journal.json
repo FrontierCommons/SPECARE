@@ -43,6 +43,13 @@
       "when": 1785938323945,
       "tag": "0005_flat_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786075581345,
+      "tag": "0006_add_web_device_platform",
+      "breakpoints": true
     }
   ]
 }

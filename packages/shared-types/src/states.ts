@@ -27,8 +27,8 @@ export type CheckInDimension = (typeof CHECKIN_DIMENSIONS)[number];
 export const TOUCHPOINT_TYPES = ['VoiceNoteSent', 'TextSent', 'CallMade', 'PrayedFor'] as const;
 export type TouchpointType = (typeof TOUCHPOINT_TYPES)[number];
 
-/** Device platforms for push token routing (APNs vs FCM). */
-export const DEVICE_PLATFORMS = ['ios', 'android'] as const;
+/** Device platforms for push token routing (APNs vs FCM vs Web Push). */
+export const DEVICE_PLATFORMS = ['ios', 'android', 'web'] as const;
 export type DevicePlatform = (typeof DEVICE_PLATFORMS)[number];
 
 /** How often a user wants the daily check-in prompt. Default is 'twice'. */

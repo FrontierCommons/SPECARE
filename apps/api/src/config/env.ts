@@ -42,6 +42,11 @@ const EnvSchema = z.object({
   FCM_CLIENT_EMAIL: z.string().optional(),
   FCM_PRIVATE_KEY: z.string().optional(), // service-account private key PEM
 
+  // --- Web Push (browser), VAPID key pair ---
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:care@sper.app'),
+
   // Email fallback (SMTP; e.g. SES SMTP interface, Postmark, Resend SMTP)
   EMAIL_FROM: z.string().email().default('care@sper.app'),
   SMTP_HOST: z.string().optional(),

@@ -1,0 +1,1 @@
+ALTER TYPE "device_platform" ADD VALUE 'web';
