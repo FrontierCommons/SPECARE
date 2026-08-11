@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, makeUser, makeCircleWith, addMember, makeCircle } from './setup';
 import { users } from '../src/db/schema';
 import { runGraceLoop, type GraceDispatcher } from '../src/workers/grace-loop';
-import { runPromptScheduler, type PromptSender, PROMPT_LOCAL_HOUR } from '../src/workers/prompt-scheduler';
+import { runPromptScheduler, type PromptSender, FREQUENCY_INTERVAL_HOURS } from '../src/workers/prompt-scheduler';
 
 const DAY = 24 * 3600 * 1000;
 
@@ -83,37 +83,76 @@ describe('runPromptScheduler', () => {
     return { s, fired };
   }
 
-  it('fires for a UTC user exactly at the target local hour', async () => {
-    const u = await makeUser('UtcUser', { timezone: 'UTC' });
+  it('fires once a check-in-plus-interval falls due, off the user\'s own last check-in', async () => {
+    const u = await makeUser('DueUser');
+    const intervalHours = FREQUENCY_INTERVAL_HOURS.twice; // default frequency
+    await db
+      .update(users)
+      .set({ lastCheckinAt: new Date(Date.now() - intervalHours * 3600_000) })
+      .where(eq(users.id, u.id));
     const { s, fired } = sender();
-    const now = new Date(Date.UTC(2026, 0, 15, PROMPT_LOCAL_HOUR, 0, 0));
-    await runPromptScheduler(s, db, now);
+    await runPromptScheduler(s, db, new Date());
     expect(fired).toContain(u.id);
   });
 
-  it('does not fire when the local hour does not match', async () => {
-    const u = await makeUser('UtcUser', { timezone: 'UTC' });
+  it('does not fire well before the interval is up', async () => {
+    const u = await makeUser('NotYetDue');
+    await db.update(users).set({ lastCheckinAt: new Date() }).where(eq(users.id, u.id));
     const { s, fired } = sender();
-    const now = new Date(Date.UTC(2026, 0, 15, (PROMPT_LOCAL_HOUR + 5) % 24, 0, 0));
-    await runPromptScheduler(s, db, now);
+    await runPromptScheduler(s, db, new Date());
     expect(fired).not.toContain(u.id);
   });
 
-  it('respects timezone: fires for Manila user at their 9am, not UTC 9am', async () => {
-    // Manila is UTC+8; their 09:00 is 01:00 UTC.
-    const manila = await makeUser('Manila', { timezone: 'Asia/Manila' });
+  it('is due only once per interval, not every hour once overdue', async () => {
+    const u = await makeUser('LongOverdue');
+    const intervalHours = FREQUENCY_INTERVAL_HOURS.twice;
+    // Three full interval cycles + a few hours overdue — well past due, but
+    // outside the one-hour window right at n*interval.
+    await db
+      .update(users)
+      .set({ lastCheckinAt: new Date(Date.now() - (3 * intervalHours + 3) * 3600_000) })
+      .where(eq(users.id, u.id));
     const { s, fired } = sender();
-    const utc0100 = new Date(Date.UTC(2026, 0, 15, 1, 0, 0));
-    await runPromptScheduler(s, db, utc0100);
-    expect(fired).toContain(manila.id);
+    await runPromptScheduler(s, db, new Date());
+    expect(fired).not.toContain(u.id);
   });
 
-  it('skips paused users even at the right hour', async () => {
-    const u = await makeUser('Paused', { timezone: 'UTC' });
-    await db.update(users).set({ notificationsPaused: true }).where(eq(users.id, u.id));
+  it('falls back to account creation time for a user who has never checked in', async () => {
+    const circle = await makeCircle();
+    const fresh = await makeUser('NeverCheckedIn');
+    await addMember(circle.id, fresh.id, true);
+    const intervalHours = FREQUENCY_INTERVAL_HOURS.twice; // default frequency, lastCheckinAt still null
+    await db
+      .update(users)
+      .set({ createdAt: new Date(Date.now() - intervalHours * 3600_000) })
+      .where(eq(users.id, fresh.id));
     const { s, fired } = sender();
-    const now = new Date(Date.UTC(2026, 0, 15, PROMPT_LOCAL_HOUR, 0, 0));
-    await runPromptScheduler(s, db, now);
+    await runPromptScheduler(s, db, new Date());
+    expect(fired).toContain(fresh.id);
+  });
+
+  it('is timezone-agnostic: two users due at the same elapsed time both fire regardless of timezone', async () => {
+    const intervalHours = FREQUENCY_INTERVAL_HOURS.twice;
+    const dueAt = new Date(Date.now() - intervalHours * 3600_000);
+    const utcUser = await makeUser('StillUtc', { timezone: 'UTC' });
+    const manilaUser = await makeUser('StillManila', { timezone: 'Asia/Manila' });
+    await db.update(users).set({ lastCheckinAt: dueAt }).where(eq(users.id, utcUser.id));
+    await db.update(users).set({ lastCheckinAt: dueAt }).where(eq(users.id, manilaUser.id));
+    const { s, fired } = sender();
+    await runPromptScheduler(s, db, new Date());
+    expect(fired).toContain(utcUser.id);
+    expect(fired).toContain(manilaUser.id);
+  });
+
+  it('skips paused users even when due', async () => {
+    const u = await makeUser('Paused');
+    const intervalHours = FREQUENCY_INTERVAL_HOURS.twice;
+    await db
+      .update(users)
+      .set({ lastCheckinAt: new Date(Date.now() - intervalHours * 3600_000), notificationsPaused: true })
+      .where(eq(users.id, u.id));
+    const { s, fired } = sender();
+    await runPromptScheduler(s, db, new Date());
     expect(fired).not.toContain(u.id);
   });
 });

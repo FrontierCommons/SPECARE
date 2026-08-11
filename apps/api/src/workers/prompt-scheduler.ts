@@ -1,20 +1,35 @@
-import { eq } from 'drizzle-orm';
-import { DateTime } from 'luxon';
 import { db, type DB } from '../config/db';
 import { users } from '../db/schema';
 import { deviceRepo } from '../modules/users/devices.repo';
 import { pushProvider, type PushProvider } from '../delivery/push.provider';
 import type { CheckInFrequency, DevicePlatform } from '@sper/shared-types';
 
-/** Local hour (24h) at which the daily Sper prompt should fire. */
-export const PROMPT_LOCAL_HOUR = 9;
-
-/** Local hours the prompt fires at, per user-chosen frequency. */
-export const FREQUENCY_HOURS: Record<CheckInFrequency, readonly number[]> = {
-  once: [PROMPT_LOCAL_HOUR],
-  twice: [PROMPT_LOCAL_HOUR, 18],
-  thrice: [PROMPT_LOCAL_HOUR, 13, 18],
+/** Hours between prompts per cadence — mirrors the web client's own
+ * countdown (apps/web/src/lib/time.ts CHECKIN_INTERVAL_HOURS) so the push
+ * and the on-screen "next check-in in..." timer agree on when "due" means,
+ * instead of two independent clocks drifting apart. */
+export const FREQUENCY_INTERVAL_HOURS: Record<CheckInFrequency, number> = {
+  once: 24,
+  twice: 12,
+  thrice: 8,
 };
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * True for exactly the one hourly tick during which `anchor + n*intervalHours`
+ * falls, for whichever n >= 1 makes that timestamp <= now. An hourly poll
+ * can therefore fire the prompt once per due window instead of every
+ * subsequent hour once someone goes overdue (which the naive `now >= dueAt`
+ * check would do forever, spamming them until they check in) — and n starts
+ * at 1, not 0, so the moment of a fresh check-in itself never counts as due.
+ */
+function isDueThisHour(anchor: Date, intervalHours: number, now: Date): boolean {
+  const intervalMs = intervalHours * HOUR_MS;
+  const elapsed = now.getTime() - anchor.getTime();
+  if (elapsed < intervalMs) return false; // hasn't been a full interval yet
+  return elapsed % intervalMs < HOUR_MS;
+}
 
 export interface PromptSender {
   sendPrompt(input: { userId: string }): Promise<void>;
@@ -22,9 +37,12 @@ export interface PromptSender {
 
 /**
  * Core scheduler logic, decoupled from BullMQ. Intended to run hourly.
- * For each non-paused user whose LOCAL time matches one of the hours for
- * their chosen check-in frequency, send the Sper prompt. Timezone
- * correctness per user (NFR). Returns the number of prompts sent.
+ * Fires per user off their OWN last check-in (or, before their first one,
+ * account creation) plus their chosen cadence — not a shared clock-hour
+ * schedule, so it's timezone-agnostic by construction (an elapsed duration
+ * doesn't care what timezone either end happened in) and it can't drift
+ * from the "next check-in in..." countdown the app shows, since both derive
+ * from the same anchor + interval. Returns the number of prompts sent.
  */
 export async function runPromptScheduler(
   sender: PromptSender,
@@ -34,18 +52,20 @@ export async function runPromptScheduler(
   const all = await database
     .select({
       id: users.id,
-      timezone: users.timezone,
       paused: users.notificationsPaused,
       frequency: users.checkinFrequency,
+      lastCheckinAt: users.lastCheckinAt,
+      createdAt: users.createdAt,
     })
     .from(users);
 
   let sent = 0;
   for (const u of all) {
     if (u.paused) continue; // grace: never nag paused users
-    const localHour = DateTime.fromJSDate(now, { zone: u.timezone || 'UTC' }).hour;
-    const hours = FREQUENCY_HOURS[u.frequency as CheckInFrequency] ?? FREQUENCY_HOURS.twice!;
-    if (!hours.includes(localHour)) continue;
+    const intervalHours =
+      FREQUENCY_INTERVAL_HOURS[u.frequency as CheckInFrequency] ?? FREQUENCY_INTERVAL_HOURS.twice;
+    const anchor = u.lastCheckinAt ?? u.createdAt;
+    if (!isDueThisHour(anchor, intervalHours, now)) continue;
     await sender.sendPrompt({ userId: u.id });
     sent++;
   }
