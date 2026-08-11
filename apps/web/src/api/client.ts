@@ -12,6 +12,8 @@ import type {
   SubmitCheckInResponse,
   SperEntryDTO,
   CareCardDTO,
+  ShareCardDTO,
+  ToggleLikeResponse,
   TouchpointDTO,
   LogTouchpointRequest,
   RegisterDeviceRequest,
@@ -178,6 +180,10 @@ export const api = {
     raw<{ sper: SperEntryDTO[] }>(`/circles/${circleId}/sper`).then((r) => r.sper),
   careCards: (circleId: string) =>
     raw<{ care_cards: CareCardDTO[] }>(`/circles/${circleId}/care-cards`).then((r) => r.care_cards),
+  shareCards: (circleId: string) =>
+    raw<{ share_cards: ShareCardDTO[] }>(`/circles/${circleId}/share-cards`).then((r) => r.share_cards),
+  toggleLike: (checkinId: string) =>
+    raw<ToggleLikeResponse>(`/checkins/${checkinId}/like`, { method: 'POST' }),
 
   // Touchpoints
   logTouchpoint: (checkinId: string, body: LogTouchpointRequest) =>

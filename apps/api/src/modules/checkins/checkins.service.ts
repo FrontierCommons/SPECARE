@@ -8,7 +8,7 @@ import {
   type BroadcastResult,
 } from '../notifications/circle-notification.service';
 import { toCheckInDTO, toCircleNotificationDTO } from '../../shared/mappers';
-import { ForbiddenError, ValidationError } from '../../shared/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '../../shared/errors';
 import {
   isDistress,
   CHECKIN_DIMENSIONS,
@@ -16,6 +16,8 @@ import {
   type SubmitCheckInResponse,
   type SperEntryDTO,
   type CareCardDTO,
+  type ShareCardDTO,
+  type ToggleLikeResponse,
 } from '@sper/shared-types';
 
 export interface SubmitCheckInInput {
@@ -126,6 +128,25 @@ export class CheckInService {
     const isMember = await this.repo.isMember(this.database, circleId, callerId);
     if (!isMember) throw new ForbiddenError('Not a member of this circle');
     return this.repo.careCards(this.database, circleId, callerId);
+  }
+
+  /** Active Share Cards for the circle. Caller must be a member. */
+  async shareCards(circleId: string, callerId: string): Promise<ShareCardDTO[]> {
+    const isMember = await this.repo.isMember(this.database, circleId, callerId);
+    if (!isMember) throw new ForbiddenError('Not a member of this circle');
+    return this.repo.shareCards(this.database, circleId, callerId);
+  }
+
+  /** Like/unlike a check-in's notes. Any circle member may toggle it. */
+  async toggleLike(checkinId: string, callerId: string): Promise<ToggleLikeResponse> {
+    const checkin = await this.repo.findById(this.database, checkinId);
+    if (!checkin) throw new NotFoundError('Check-in not found');
+
+    const isMember = await this.repo.isMember(this.database, checkin.circleId, callerId);
+    if (!isMember) throw new ForbiddenError('Not a member of this circle');
+
+    const { liked, likeCount } = await this.repo.toggleLike(this.database, checkinId, callerId);
+    return { liked, like_count: likeCount };
   }
 
   private anyDistress(input: SubmitCheckInInput): boolean {

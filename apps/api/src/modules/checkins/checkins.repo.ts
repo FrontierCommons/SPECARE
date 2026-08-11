@@ -5,11 +5,18 @@ import {
   circleMemberships,
   circleNotifications,
   careGratitudes,
+  checkinLikes,
   users,
   type CheckInRow,
   type NewCheckInRow,
 } from '../../db/schema';
-import { isDistress, type CareCardDTO, type SperEntryDTO, type StateLevel } from '@sper/shared-types';
+import {
+  isDistress,
+  type CareCardDTO,
+  type ShareCardDTO,
+  type SperEntryDTO,
+  type StateLevel,
+} from '@sper/shared-types';
 
 type Executor = DB | Parameters<Parameters<DB['transaction']>[0]>[0];
 
@@ -188,6 +195,8 @@ export class CheckInRepo {
         }
       }
 
+      const likes = await this.likeStats(exec, c.id, callerId);
+
       cards.push({
         checkin_id: c.id,
         target_user_id: c.userId,
@@ -198,9 +207,103 @@ export class CheckInRepo {
         created_at: c.createdAt.toISOString(),
         ...(gratitudeShown !== undefined ? { gratitude_shown: gratitudeShown } : {}),
         ...(gratitudeReceived !== undefined ? { gratitude_received: gratitudeReceived } : {}),
+        like_count: likes.count,
+        liked_by_me: likes.likedByMe,
       });
     }
     return cards;
+  }
+
+  /**
+   * Active Share Cards: for each member's latest non-expired check-in that
+   * flags NO distress at all but still has a note worth surfacing (an
+   * "I'd rather explain" answer, or the general end-of-flow note), the
+   * circle's "someone wants to share something special" moment. Visible to
+   * any circle member; naturally stops existing once that check-in is no
+   * longer the member's latest (superseded by their next one).
+   */
+  async shareCards(exec: Executor, circleId: string, callerId: string): Promise<ShareCardDTO[]> {
+    const active = await exec
+      .select()
+      .from(checkins)
+      .where(and(eq(checkins.circleId, circleId), gt(checkins.expiresAt, new Date())))
+      .orderBy(desc(checkins.createdAt));
+
+    const latest = new Map<string, CheckInRow>();
+    for (const c of active) {
+      if (!latest.has(c.userId)) latest.set(c.userId, c);
+    }
+
+    const cards: ShareCardDTO[] = [];
+    for (const c of latest.values()) {
+      const states: StateLevel[] = [
+        c.spiritualState as StateLevel,
+        c.physicalState as StateLevel,
+        c.emotionalState as StateLevel,
+        c.vocationalState as StateLevel,
+        c.relationalState as StateLevel,
+      ];
+      if (states.some((s) => isDistress(s))) continue; // that's a Care Card's job
+      if (!c.optionalNote) continue; // nothing to share
+
+      const [author] = await exec
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, c.userId))
+        .limit(1);
+
+      const likes = await this.likeStats(exec, c.id, callerId);
+
+      cards.push({
+        checkin_id: c.id,
+        target_user_id: c.userId,
+        target_name: author?.name ?? 'A friend',
+        optional_note: c.optionalNote,
+        created_at: c.createdAt.toISOString(),
+        like_count: likes.count,
+        liked_by_me: likes.likedByMe,
+      });
+    }
+    return cards;
+  }
+
+  private async likeStats(
+    exec: Executor,
+    checkinId: string,
+    callerId: string,
+  ): Promise<{ count: number; likedByMe: boolean }> {
+    const rows = await exec
+      .select({ likerId: checkinLikes.likerId })
+      .from(checkinLikes)
+      .where(eq(checkinLikes.checkinId, checkinId));
+    return { count: rows.length, likedByMe: rows.some((r) => r.likerId === callerId) };
+  }
+
+  /** Toggle the caller's like on a check-in — like if not already liked,
+   * unlike if it already was. Idempotent per the unique (checkin, liker)
+   * index, so a double-submit race just lands on the same end state. */
+  async toggleLike(
+    exec: Executor,
+    checkinId: string,
+    likerId: string,
+  ): Promise<{ liked: boolean; likeCount: number }> {
+    const [existing] = await exec
+      .select({ id: checkinLikes.id })
+      .from(checkinLikes)
+      .where(and(eq(checkinLikes.checkinId, checkinId), eq(checkinLikes.likerId, likerId)))
+      .limit(1);
+
+    if (existing) {
+      await exec.delete(checkinLikes).where(eq(checkinLikes.id, existing.id));
+    } else {
+      await exec.insert(checkinLikes).values({ checkinId, likerId });
+    }
+
+    const rows = await exec
+      .select({ id: checkinLikes.id })
+      .from(checkinLikes)
+      .where(eq(checkinLikes.checkinId, checkinId));
+    return { liked: !existing, likeCount: rows.length };
   }
 }
 

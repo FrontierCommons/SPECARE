@@ -11,6 +11,7 @@ import type {
 export const keys = {
   sper: (circleId: string) => ['sper', circleId] as const,
   careCards: (circleId: string) => ['careCards', circleId] as const,
+  shareCards: (circleId: string) => ['shareCards', circleId] as const,
   members: (circleId: string) => ['members', circleId] as const,
   touchpoints: (checkinId: string) => ['touchpoints', checkinId] as const,
   voiceNotes: (checkinId: string) => ['voiceNotes', checkinId] as const,
@@ -43,6 +44,30 @@ export function useCareCards(circleId: string) {
     // refresh — mirrors useTouchpoints below. Also refetch on window focus.
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
+  });
+}
+
+export function useShareCards(circleId: string) {
+  return useQuery({
+    queryKey: keys.shareCards(circleId),
+    queryFn: () => api.shareCards(circleId),
+    enabled: !!circleId,
+    staleTime: 30_000,
+    // Mirrors useCareCards: polled while visible so a new like (or a fresh
+    // share from someone else) shows up without a manual refresh.
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useToggleLike(circleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (checkinId: string) => api.toggleLike(checkinId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
+      qc.invalidateQueries({ queryKey: keys.shareCards(circleId) });
+    },
   });
 }
 

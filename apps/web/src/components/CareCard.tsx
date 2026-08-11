@@ -1,15 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import type { CareCardDTO, TouchpointType } from '@sper/shared-types';
+import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointType } from '@sper/shared-types';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { DIMENSIONS, dimState } from '../lib/checkinState';
+import { parseCheckInNote } from '../lib/checkinNote';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
 import { openMessage, outreachPrefill } from '../lib/deeplink';
 
 interface Props {
   card: CareCardDTO;
+  /** The flagged member's own check-in entry — lets each dimension pill show
+   * what they actually answered, not just which part of life it was. */
+  entry?: SperEntryDTO | null;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   alreadyReached?: string[]; // responder names
@@ -17,10 +22,12 @@ interface Props {
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const dimTextStyle = { ...type.caption, color: color.amber };
-const noteStyle = { ...type.body, color: color.textPrimary, fontStyle: 'italic' as const };
+const neutralAnswerStyle = { ...type.caption, color: color.textSecondary };
+const noteStyle = { ...type.caption,color: color.amber };
 const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sage };
 const actionTextStyle = { ...type.label, color: color.textPrimary };
 const actionTextPrimaryStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const toggleTextStyle = { ...type.label, color: color.sage };
 const reachedStyle = { ...type.caption, color: color.textMuted };
 const reachedSelfStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
 const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
@@ -28,12 +35,30 @@ const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600
 /**
  * The responder's view when a friend has flagged distress. Leads with the
  * person, not the data; every action is off-app or a quiet log.
+ *
+ * Once the viewer has cared for the flagged part, the caller (today/page.tsx)
+ * stops rendering this card at all and promotes its non-distress notes into
+ * a ShareCard instead — so everything here assumes the viewer hasn't acted
+ * yet, and stays purely informational + collapsed for anything not flagged.
  */
-export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: Props) {
+export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReached }: Props) {
   const prefill = outreachPrefill(card.target_name);
   const selfReached = alreadyReached?.includes('You') ?? false;
   const [recorderVisible, setRecorderVisible] = useState(false);
   const [showCopiedNotice, setShowCopiedNotice] = useState(false);
+  // Collapsed by default — these aren't part of what needs a response, so
+  // they shouldn't compete for attention with the actions below.
+  const [showOtherNotes, setShowOtherNotes] = useState(false);
+  // Per-dimension "I'd rather explain" text was tagged by dimension name when
+  // it was saved, so it can be shown as that dimension's own answer instead
+  // of a separate note; whatever's left over is genuinely untagged context.
+  const { perDimension, general } = parseCheckInNote(card.optional_note);
+  // An explained dimension that isn't Heavy/In the Pit never made it into
+  // flagged_dimensions (the server only flags distress) — it still deserves
+  // to be shown, just without implying it needs any of the actions below.
+  const flaggedSet = new Set(card.flagged_dimensions);
+  const explainedButNotFlagged = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
+  const hasOtherNotes = explainedButNotFlagged.length > 0 || !!general;
 
   const sendMsg = async () => {
     const outcome = await openMessage(prefill);
@@ -62,15 +87,40 @@ export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: P
     <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-sm">
       <p style={titleStyle}>{strings.care.cardTitle(card.target_name)}</p>
 
-      <div className="flex flex-wrap gap-sm">
-        {card.flagged_dimensions.map((d) => (
-          <span key={d} className="rounded-pill bg-surfaceRaised px-md py-xs">
-            <span style={dimTextStyle}>{labelFor(d)}</span>
-          </span>
-        ))}
+      <div className="flex flex-col gap-sm">
+        {card.flagged_dimensions.map((d) => {
+          const dim = d as CheckInDimension;
+          const level = entry ? dimState(entry, dim) : null;
+          const answer = perDimension[dim] ?? (level ? strings.checkIn.answerOption(dim, level).label : null);
+          return (
+            <span key={d} className="rounded-pill bg-surfaceRaised px-md py-xs">
+              <span style={dimTextStyle}>
+                {strings.checkIn.dimensions[dim]}
+                {answer ? `: ${answer}` : ''}
+              </span>
+            </span>
+          );
+        })}
       </div>
 
-      {card.optional_note ? <p style={noteStyle}>&ldquo;{card.optional_note}&rdquo;</p> : null}
+      {hasOtherNotes ? (
+        <div className="flex flex-col gap-sm">
+          <button onClick={() => setShowOtherNotes((v) => !v)} className="flex items-center gap-xs self-start">
+            <span style={toggleTextStyle}>{strings.care.otherNotes}</span>
+            <span style={toggleTextStyle}>{showOtherNotes ? '︿' : '﹀'}</span>
+          </button>
+          {showOtherNotes ? (
+            <div className="flex flex-col gap-sm">
+              {explainedButNotFlagged.map((dim) => (
+                <p key={dim} style={neutralAnswerStyle}>
+                  {strings.checkIn.dimensions[dim]}: {perDimension[dim]}
+                </p>
+              ))}
+              {general ? <p style={noteStyle}>{general}</p> : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {!selfReached ? (
         <>
@@ -118,17 +168,6 @@ function Action({ label, onClick, primary }: { label: string; onClick: () => voi
       <span style={primary ? actionTextPrimaryStyle : actionTextStyle}>{label}</span>
     </button>
   );
-}
-
-function labelFor(dim: string): string {
-  const map: Record<string, string> = {
-    spiritual: 'Spiritual',
-    physical: 'Physical',
-    emotional: 'Emotional',
-    vocational: 'Career / Life',
-    relational: 'Relational',
-  };
-  return map[dim] ?? dim;
 }
 
 export default CareCard;

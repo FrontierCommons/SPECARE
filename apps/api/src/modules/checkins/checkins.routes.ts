@@ -47,4 +47,16 @@ export async function checkinRoutes(app: FastifyInstance): Promise<void> {
     const care_cards = await checkInService.careCards(id, currentUserId(req));
     return reply.code(200).send({ care_cards });
   });
+
+  app.get('/circles/:id/share-cards', async (req, reply) => {
+    const { id } = idParam.parse(req.params);
+    const share_cards = await checkInService.shareCards(id, currentUserId(req));
+    return reply.code(200).send({ share_cards });
+  });
+
+  app.post('/checkins/:id/like', async (req, reply) => {
+    const { id } = idParam.parse(req.params);
+    const result = await checkInService.toggleLike(id, currentUserId(req));
+    return reply.code(200).send(result);
+  });
 }

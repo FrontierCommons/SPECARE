@@ -198,8 +198,34 @@ export interface CareCardDTO {
   created_at: ISODateTime;
   /** True exactly once: this is the caller's first fetch since being thanked. */
   gratitude_shown?: boolean;
-  /** True for the rest of this check-in's life once the caller has ever been thanked. */
+  /** For the rest of this check-in's life once the caller has ever been thanked. */
   gratitude_received?: boolean;
+  /** How many circle members have liked this check-in's notes. */
+  like_count: number;
+  /** True if the caller themself has liked it. */
+  liked_by_me: boolean;
+}
+
+/**
+ * Share Card: the circle's "someone wants to share something special"
+ * moment — for a check-in with no distress at all, but at least one custom
+ * note worth surfacing. Visible to all circle members; naturally disappears
+ * once the author submits a newer check-in, same "only the latest counts"
+ * rule as everything else Sper shows.
+ */
+export interface ShareCardDTO {
+  checkin_id: UUID;
+  target_user_id: UUID;
+  target_name: string;
+  optional_note: string; // never empty — that's the gate for existing at all
+  created_at: ISODateTime;
+  like_count: number;
+  liked_by_me: boolean;
+}
+
+export interface ToggleLikeResponse {
+  liked: boolean;
+  like_count: number;
 }
 
 /* ---------------------------- Touchpoints ----------------------------- */

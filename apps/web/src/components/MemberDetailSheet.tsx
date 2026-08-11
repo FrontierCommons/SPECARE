@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import type { CareCardDTO, SperEntryDTO, TouchpointType } from '@sper/shared-types';
 import { Avatar } from './Avatar';
 import { CareCard } from './CareCard';
+import { ShareCard } from './ShareCard';
 import { SelfCareTree } from './SelfCareTree';
 import { StateBadge } from './StateBadge';
 import { DIMENSIONS, dimState, aggregateState } from '../lib/checkinState';
 import { relativeTime } from '../lib/time';
+import { fromCareCard } from '../lib/shareable';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
@@ -23,6 +25,8 @@ interface Props {
   touchpointCount?: number;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+  onToggleLike?: () => void;
+  likePending?: boolean;
   onClose: () => void;
 }
 
@@ -51,6 +55,8 @@ export function MemberDetailSheet({
   touchpointCount,
   onLogCare,
   onSendVoiceNote,
+  onToggleLike,
+  likePending,
   onClose,
 }: Props) {
   const [visible, setVisible] = useState(false);
@@ -66,6 +72,7 @@ export function MemberDetailSheet({
 
   if (!entry) return null;
   const agg = aggregateState(entry);
+  const reached = alreadyReached?.includes('You') ?? false;
 
   return (
     <div className="fixed inset-0 z-30">
@@ -109,12 +116,22 @@ export function MemberDetailSheet({
           {isSelf ? (
             <SelfCareTree entry={entry} count={touchpointCount ?? 0} />
           ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
-            <CareCard
-              card={careCard}
-              onLogCare={onLogCare}
-              onSendVoiceNote={onSendVoiceNote}
-              alreadyReached={alreadyReached}
-            />
+            reached ? (
+              <ShareCard
+                card={fromCareCard(careCard)}
+                isSelf={false}
+                onToggleLike={onToggleLike}
+                likePending={likePending}
+              />
+            ) : (
+              <CareCard
+                card={careCard}
+                entry={entry}
+                onLogCare={onLogCare}
+                onSendVoiceNote={onSendVoiceNote}
+                alreadyReached={alreadyReached}
+              />
+            )
           ) : null}
         </div>
       </div>

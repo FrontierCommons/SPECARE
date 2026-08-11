@@ -205,6 +205,31 @@ export const careGratitudes = pgTable(
   }),
 );
 
+/* ----------------------------- Check-in likes --------------------------- */
+// A circle member liking a check-in's notes — either a "wants to share
+// something special" moment (no distress at all) or, once someone's cared
+// for a distressed check-in, the leftover non-distress notes on it. One row
+// per (checkin, liker); the unique index makes toggling idempotent — like
+// twice and the second call just unlikes.
+
+export const checkinLikes = pgTable(
+  'checkin_likes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    checkinId: uuid('checkin_id')
+      .notNull()
+      .references(() => checkins.id, { onDelete: 'cascade' }),
+    likerId: uuid('liker_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqPerLiker: uniqueIndex('uniq_checkin_like_liker').on(t.checkinId, t.likerId),
+    byCheckin: index('idx_checkin_likes_checkin').on(t.checkinId),
+  }),
+);
+
 /* ---------------------------- Voice notes ------------------------------ */
 // A responder's in-app recording for a distressed check-in's author.
 // Audio is stored inline as base64 (clips are capped at 30s, comfortably
@@ -291,3 +316,4 @@ export type CareGratitudeRow = typeof careGratitudes.$inferSelect;
 export type CareGapAlertRow = typeof careGapAlerts.$inferSelect;
 export type VoiceNoteRow = typeof voiceNotes.$inferSelect;
 export type DeviceTokenRow = typeof deviceTokens.$inferSelect;
+export type CheckInLikeRow = typeof checkinLikes.$inferSelect;
