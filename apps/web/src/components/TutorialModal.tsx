@@ -183,7 +183,7 @@ function ExampleOrb({ name, states }: { name: string; states: Record<CheckInDime
 function CheckInExample() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-sm">
-      <ChatBubble from="bot" text={strings.checkIn.botQuestions.emotional} />
+      <ChatBubble from="bot" text={strings.checkIn.botQuestion('emotional')} />
       <div className="flex flex-wrap justify-center gap-sm">
         {(['Thriving', 'Steady', 'Heavy', 'In the Pit'] as StateLevel[]).map((state) => (
           <StateBadge key={state} state={state} selected={state === 'Steady'} compact />

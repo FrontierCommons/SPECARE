@@ -12,12 +12,13 @@ export const color = {
   // Warm slate base — calmer than pure grey, not the AI-default cream.
   bg: '#1C2024', // deep warm slate (dark, restful)
   surface: '#252A2F',
-  surfaceRaised: '#2E343A',
+  surfaceRaised: '#3c4b59',
   border: '#3A424A',
 
   textPrimary: '#ECE7DF', // warm off-white
   textSecondary: '#A7A399',
   textMuted: '#e4e0d8',
+  textOption: '#f7f6f4',
 
   // Accents
   sage: '#8FA98C', // soft green — quiet, living

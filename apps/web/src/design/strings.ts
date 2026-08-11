@@ -4,6 +4,276 @@
  * case, no filler, never clinical.
  */
 
+import type { CheckInDimension, StateLevel } from '@sper/shared-types';
+
+interface AnswerOption {
+  icon: string;
+  label: string;
+}
+
+/** Every question variant carries its own four options — the wording AND
+ * the icon change per question, not just per state level, so these can't be
+ * looked up generically off `stateVisual`. Order is always best → worst,
+ * matching STATE_LEVELS (Thriving, Steady, Heavy, In the Pit). */
+interface QuestionVariant {
+  text: string;
+  options: Record<StateLevel, AnswerOption>;
+}
+
+type QuestionBank = readonly [QuestionVariant, QuestionVariant, QuestionVariant, QuestionVariant, QuestionVariant];
+
+/** Five question variants per dimension so the daily check-in doesn't ask
+ * the exact same words (or the same four canned answers) every day. */
+const BOT_QUESTION_BANKS: Record<CheckInDimension, QuestionBank> = {
+  spiritual: [
+    {
+      text: '🙏 How has God felt to you now?',
+      options: {
+        Thriving: { icon: '🌱', label: 'Close and present' },
+        Steady: { icon: '🌤️', label: 'Sometimes close, sometimes distant' },
+        Heavy: { icon: '🌫️', label: 'Distant lately' },
+        'In the Pit': { icon: '❓', label: 'Hard to tell' },
+      },
+    },
+    {
+      text: '🙏 How’s your time with God been lately?',
+      options: {
+        Thriving: { icon: '🙏', label: 'Consistent and meaningful' },
+        Steady: { icon: '🌱', label: 'Somewhat consistent' },
+        Heavy: { icon: '🌫️', label: 'Hard to make time' },
+        'In the Pit': { icon: '💤', label: 'Haven’t really connected lately' },
+      },
+    },
+    {
+      text: '🙏 Does God feel near or far today?',
+      options: {
+        Thriving: { icon: '🫶', label: 'Very near' },
+        Steady: { icon: '🌤️', label: 'Somewhat near' },
+        Heavy: { icon: '🌫️', label: 'Somewhat distant' },
+        'In the Pit': { icon: '🌑', label: 'Very distant' },
+      },
+    },
+    {
+      text: '🙏 How’s your faith holding up right now?',
+      options: {
+        Thriving: { icon: '🌱', label: 'Strong' },
+        Steady: { icon: '🌤️', label: 'Doing okay' },
+        Heavy: { icon: '🌊', label: 'Uncertain' },
+        'In the Pit': { icon: '🪨', label: 'Difficult right now' },
+      },
+    },
+    {
+      text: '🙏 Have you sensed God’s presence lately?',
+      options: {
+        Thriving: { icon: '✨', label: 'Often' },
+        Steady: { icon: '🌤️', label: 'Sometimes' },
+        Heavy: { icon: '🌫️', label: 'Not much' },
+        'In the Pit': { icon: '❓', label: 'I’m not sure' },
+      },
+    },
+  ],
+  physical: [
+    {
+      text: '💪 How is your body doing right now?',
+      options: {
+        Thriving: { icon: '💪', label: 'Feeling good' },
+        Steady: { icon: '🌤️', label: 'Doing okay' },
+        Heavy: { icon: '😮‍💨', label: 'A little exhausted' },
+        'In the Pit': { icon: '🪫', label: 'Really drained' },
+      },
+    },
+    {
+      text: '💪 What’s your energy level now?',
+      options: {
+        Thriving: { icon: '⚡', label: '100%' },
+        Steady: { icon: '🙂', label: '60%' },
+        Heavy: { icon: '😮‍💨', label: '40%' },
+        'In the Pit': { icon: '🪫', label: '10%' },
+      },
+    },
+    {
+      text: '💪 Is your sleeping okay?',
+      options: {
+        Thriving: { icon: '🌱', label: 'Yes, pretty consistent' },
+        Steady: { icon: '🌤️', label: 'Mostly' },
+        Heavy: { icon: '😴', label: 'Okay but a bit difficult' },
+        'In the Pit': { icon: '😴', label: 'Sleep deprived' },
+      },
+    },
+    {
+      text: '💪 How rested does your body feel right now?',
+      options: {
+        Thriving: { icon: '😌', label: 'Well rested' },
+        Steady: { icon: '🙂', label: 'Somewhat rested' },
+        Heavy: { icon: '😮‍💨', label: 'A little tired' },
+        'In the Pit': { icon: '🪫', label: 'Completely drained' },
+      },
+    },
+    {
+      text: '💪 Any aches, exhaustion, or health worries lately?',
+      options: {
+        Thriving: { icon: '🌱', label: 'No, feeling good' },
+        Steady: { icon: '🌤️', label: 'A few minor things' },
+        Heavy: { icon: '😮‍💨', label: 'Something has been bothering me' },
+        'In the Pit': { icon: '🆘', label: 'It’s affecting my day-to-day life' },
+      },
+    },
+  ],
+  emotional: [
+    {
+      text: '❤️ How is your heart doing right now?',
+      options: {
+        Thriving: { icon: '🌱', label: 'Light and peaceful' },
+        Steady: { icon: '🌤️', label: 'A little heavy' },
+        Heavy: { icon: '🌧️', label: 'Pretty heavy' },
+        'In the Pit': { icon: '🌊', label: 'Overwhelmed' },
+      },
+    },
+    {
+      text: '❤️ What’s your mood been like lately?',
+      options: {
+        Thriving: { icon: '😊', label: 'Mostly positive' },
+        Steady: { icon: '🙂', label: 'Up and down' },
+        Heavy: { icon: '😕', label: 'Mostly difficult' },
+        'In the Pit': { icon: '😔', label: 'Really low' },
+      },
+    },
+    {
+      text: '❤️ Feeling more at peace or more anxious lately?',
+      options: {
+        Thriving: { icon: '🕊️', label: 'Mostly at peace' },
+        Steady: { icon: '🌤️', label: 'A mix of both' },
+        Heavy: { icon: '🌊', label: 'Uncertain' },
+        'In the Pit': { icon: '😣', label: 'I’m anxious' },
+      },
+    },
+    {
+      text: '❤️ How heavy is your emotional feeling now?',
+      options: {
+        Thriving: { icon: '🌱', label: 'Light' },
+        Steady: { icon: '🌤️', label: 'Manageable' },
+        Heavy: { icon: '🌧️', label: 'Heavy' },
+        'In the Pit': { icon: '🌊', label: 'Overwhelming' },
+      },
+    },
+    {
+      text: '❤️ Does your heart feel light or weighed down right now?',
+      options: {
+        Thriving: { icon: '☀️', label: 'Light' },
+        Steady: { icon: '🌤️', label: 'A little weighed down' },
+        Heavy: { icon: '🌧️', label: 'Pretty weighed down' },
+        'In the Pit': { icon: '🌧️', label: 'Very heavy' },
+      },
+    },
+  ],
+  vocational: [
+    {
+      text: '💼 How are you feeling about your work or life direction?',
+      options: {
+        Thriving: { icon: '🧭', label: 'I feel on track' },
+        Steady: { icon: '🌤️', label: 'Still figuring it out' },
+        Heavy: { icon: '🌀', label: 'Feeling a little lost' },
+        'In the Pit': { icon: '🧱', label: 'Feeling stuck' },
+      },
+    },
+    {
+      text: '💼 Does your work feel meaningful right now?',
+      options: {
+        Thriving: { icon: '✨', label: 'Very meaningful' },
+        Steady: { icon: '🙂', label: 'Somewhat meaningful' },
+        Heavy: { icon: '😐', label: 'Not really' },
+        'In the Pit': { icon: '🌫️', label: 'I’m questioning my direction' },
+      },
+    },
+    {
+      text: '💼 How’s your sense of purpose lately?',
+      options: {
+        Thriving: { icon: '🧭', label: 'Strong' },
+        Steady: { icon: '🌤️', label: 'Fairly steady' },
+        Heavy: { icon: '🌫️', label: 'Unclear' },
+        'In the Pit': { icon: '🌀', label: 'I’m struggling to find purpose' },
+      },
+    },
+    {
+      text: '💼 Feeling stuck or moving forward right now?',
+      options: {
+        Thriving: { icon: '🚀', label: 'Moving forward' },
+        Steady: { icon: '🌱', label: 'Making slow progress' },
+        Heavy: { icon: '🌀', label: 'Not sure' },
+        'In the Pit': { icon: '🧱', label: 'Feeling stuck' },
+      },
+    },
+    {
+      text: '💼 How’s work been treating you lately?',
+      options: {
+        Thriving: { icon: '😊', label: 'Going well' },
+        Steady: { icon: '🙂', label: 'Mostly okay' },
+        Heavy: { icon: '😮‍💨', label: 'It’s been draining' },
+        'In the Pit': { icon: '🧱', label: 'It’s been really difficult' },
+      },
+    },
+  ],
+  relational: [
+    {
+      text: '🤝 How connected do you feel to the people around you?',
+      options: {
+        Thriving: { icon: '🫶', label: 'Very connected' },
+        Steady: { icon: '🙂', label: 'Fairly connected' },
+        Heavy: { icon: '🌫️', label: 'A little disconnected' },
+        'In the Pit': { icon: '🥀', label: 'Very disconnected' },
+      },
+    },
+    {
+      text: '🤝 Do the people around you really know what’s going on with you?',
+      options: {
+        Thriving: { icon: '🫶', label: 'Yes, I feel known' },
+        Steady: { icon: '🙂', label: 'Somewhat' },
+        Heavy: { icon: '🌫️', label: 'Not really' },
+        'In the Pit': { icon: '🤐', label: 'I keep most things to myself' },
+      },
+    },
+    {
+      text: '🤝 How are your closest relationships feeling lately?',
+      options: {
+        Thriving: { icon: '❤️', label: 'Strong and healthy' },
+        Steady: { icon: '🙂', label: 'Mostly good' },
+        Heavy: { icon: '🌤️', label: 'A little strained' },
+        'In the Pit': { icon: '🌧️', label: 'Difficult right now' },
+      },
+    },
+    {
+      text: '🤝 Do you feel supported by the people around you?',
+      options: {
+        Thriving: { icon: '🫶', label: 'Very supported' },
+        Steady: { icon: '🙂', label: 'Somewhat supported' },
+        Heavy: { icon: '🌫️', label: 'Not much' },
+        'In the Pit': { icon: '🥀', label: 'I feel alone' },
+      },
+    },
+    {
+      text: '🤝 Lonely or well-connected lately?',
+      options: {
+        Thriving: { icon: '🫶', label: 'Well connected' },
+        Steady: { icon: '🙂', label: 'Mostly connected' },
+        Heavy: { icon: '🌫️', label: 'Sometimes lonely' },
+        'In the Pit': { icon: '🥀', label: 'Often lonely' },
+      },
+    },
+  ],
+};
+
+/** Same rotation index for every dimension, so a whole check-in uses one
+ * "day's" set of questions rather than desyncing per dimension. Advances
+ * once per calendar day (UTC) — stable across repeat check-ins on the same
+ * day, different the next. */
+function rotatingQuestionIndex(): number {
+  return Math.floor(Date.now() / 86_400_000) % 5;
+}
+
+function todaysVariant(dim: CheckInDimension): QuestionVariant {
+  return BOT_QUESTION_BANKS[dim][rotatingQuestionIndex()]!;
+}
+
 export const strings = {
   app: {
     name: 'SPECARE',
@@ -76,6 +346,10 @@ export const strings = {
     checkInCtaFirst: 'Wanna check-in the first time today?',
     nextCheckIn: (t: string) => `Next check-in in ${t}`,
     quietFor: (name: string) => `${name} has been quiet for a bit`,
+    newSection: 'New',
+    respondedSection: 'Already responded',
+    newEmpty: 'You’ve caught up with everyone!',
+    respondedEmpty: "You haven't responded to anything yet.",
   },
 
   checkIn: {
@@ -91,21 +365,19 @@ export const strings = {
       relational: 'Relational',
     },
     botIntro: 'Hey — quick check-in. Just five taps, honestly answered.',
-    botQuestions: {
-      spiritual: '🙏 How close do you feel to God right now?',
-      physical: '💪 How is your body doing right now?',
-      emotional: '❤️ How is your heart doing right now?',
-      vocational: '💼 How are you feeling about your work or life direction?',
-      relational: '🤝 How connected do you feel to the people around you?',
+    /** Today's pick from that dimension's 5-question bank. */
+    botQuestion(dim: CheckInDimension): string {
+      return todaysVariant(dim).text;
     },
-    /** Per-dimension answer copy for the same four underlying state levels — same weather, different words for each part of life. */
-    answerLabels: {
-      spiritual: { Thriving: 'Thriving', Steady: 'Steady', Heavy: 'Struggling', 'In the Pit': 'In the Pit' },
-      physical: { Thriving: 'Strong', Steady: 'Doing OK', Heavy: 'Running Low', 'In the Pit': 'Drained' },
-      emotional: { Thriving: 'Thriving', Steady: 'Steady', Heavy: 'Heavy', 'In the Pit': 'In the Pit' },
-      vocational: { Thriving: 'Confident', Steady: 'Steady', Heavy: 'Uncertain', 'In the Pit': 'Lost' },
-      relational: { Thriving: 'Deeply Connected', Steady: 'Connected', Heavy: 'Disconnected', 'In the Pit': 'Isolated' },
+    /** Today's icon + label for one of the four levels, for whichever
+     * question variant is showing right now. */
+    answerOption(dim: CheckInDimension, level: StateLevel): AnswerOption {
+      return todaysVariant(dim).options[level];
     },
+    explainOption: { icon: '💬', label: 'I’d rather explain' },
+    explainPlaceholder: 'What’s going on?',
+    explainLevelPrompt: 'Which option aligns best with you now?',
+    explainCancel: 'Cancel',
     botNotePrompt: 'Anything you want to add? Totally optional.',
     botOutro: 'Got it. Sending this to your circle.',
     notePlaceholderShort: 'Type a note…',
@@ -152,6 +424,14 @@ export const strings = {
     voiceNotePlay: 'Play',
     voiceNotePause: 'Pause',
     voiceNoteReceived: 'Received',
+
+    wantsToShare: (name: string) => `${name} wants to share something special!`,
+    youShared: 'You shared to everyone!',
+    otherNotes: 'Other notes',
+    like: 'Like',
+    liked: 'Liked',
+    likeCount: (n: number) => (n === 1 ? '1 like' : `${n} likes`),
+    reactedTooltip: (n: number) => (n === 1 ? '1 person reacted!' : `${n} people reacted!`),
   },
 
   member: {

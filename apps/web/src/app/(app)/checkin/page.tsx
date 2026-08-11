@@ -15,20 +15,25 @@ import { ChatBubble } from '../../../components/ChatBubble';
 import { StateBadge } from '../../../components/StateBadge';
 import { NextCheckInCountdown } from '../../../components/NextCheckInCountdown';
 import { DIMENSIONS, dimState } from '../../../lib/checkinState';
+import { buildCheckInNote } from '../../../lib/checkinNote';
 import { relativeTime } from '../../../lib/time';
 import { enqueueCheckIn } from '../../../lib/offlineQueue';
 import { color, stateVisual, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
 type Selections = Partial<Record<CheckInDimension, StateLevel>>;
+type Explanations = Partial<Record<CheckInDimension, string>>;
 
 // Steps: 0..4 = one per dimension question, 5 = optional note, 6 = sent.
 const NOTE_STEP = DIMENSIONS.length;
 const DONE_STEP = DIMENSIONS.length + 1;
+const EXPLAIN_MAX_LENGTH = 300;
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const closeGlyphStyle = { ...type.heading, color: color.textMuted };
-const optionLabelStyle = { ...type.label, fontSize: type.label.fontSize + 2, fontWeight: 700 as const, color: color.bg };
+const optionLabelStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight: 500 as const, color: color.textOption };
+const explainOptionTextStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
+const explainPromptStyle = { ...type.caption, color: color.textMuted };
 const composerSkipStyle = { ...type.label, color: color.textMuted };
 const composerSendTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
@@ -49,6 +54,10 @@ export default function CheckInPage() {
   const sper = useSper(circleId);
   const submit = useSubmitCheckIn(circleId);
   const [sel, setSel] = useState<Selections>({});
+  const [explanations, setExplanations] = useState<Explanations>({});
+  const [explaining, setExplaining] = useState(false);
+  const [explainText, setExplainText] = useState('');
+  const [explainLevel, setExplainLevel] = useState<StateLevel | null>(null);
   const [step, setStep] = useState(0);
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -88,6 +97,10 @@ export default function CheckInPage() {
         frequency={user!.checkin_frequency}
         onUpdate={() => {
           setSel({});
+          setExplanations({});
+          setExplaining(false);
+          setExplainText('');
+          setExplainLevel(null);
           setStep(0);
           setNote('');
           setUpdating(true);
@@ -102,7 +115,36 @@ export default function CheckInPage() {
     setStep((s) => s + 1);
   };
 
+  const beginExplain = () => {
+    setExplainText('');
+    setExplainLevel(null);
+    setExplaining(true);
+  };
+
+  const cancelExplain = () => {
+    setExplaining(false);
+    setExplainText('');
+    setExplainLevel(null);
+  };
+
+  const sendExplain = () => {
+    if (!explainText.trim() || !explainLevel) return;
+    const dim = DIMENSIONS[step]!;
+    setSel((s) => ({ ...s, [dim]: explainLevel }));
+    setExplanations((e) => ({ ...e, [dim]: explainText.trim() }));
+    setExplaining(false);
+    setExplainText('');
+    setExplainLevel(null);
+    setStep((s) => s + 1);
+  };
+
   const finish = async (finalNote: string) => {
+    // Per-dimension explanations ride along in the same free-text note the
+    // circle already sees — no separate field, so each is tagged with which
+    // part of life it was about (CareCard parses the tags back out to show
+    // each explanation as that dimension's own answer).
+    const combinedNote = buildCheckInNote(explanations, finalNote);
+
     const payload = {
       circle_id: circleId,
       spiritual_state: sel.spiritual!,
@@ -110,7 +152,7 @@ export default function CheckInPage() {
       emotional_state: sel.emotional!,
       vocational_state: sel.vocational!,
       relational_state: sel.relational!,
-      ...(finalNote.trim() ? { optional_note: finalNote.trim() } : {}),
+      ...(combinedNote ? { optional_note: combinedNote } : {}),
     };
     try {
       await submit.mutateAsync(payload);
@@ -139,10 +181,11 @@ export default function CheckInPage() {
 
         {DIMENSIONS.slice(0, step).map((dim) => (
           <Fragment key={dim}>
-            <ChatBubble from="bot" text={strings.checkIn.botQuestions[dim]} />
+            <ChatBubble from="bot" text={strings.checkIn.botQuestion(dim)} />
             <ChatBubble
               from="user"
-              text={strings.checkIn.answerLabels[dim][sel[dim]!]}
+              nowrap={!explanations[dim]}
+              text={explanations[dim] ?? strings.checkIn.answerOption(dim, sel[dim]!).label}
               bubbleColor={stateVisual[sel[dim]!].color}
             />
           </Fragment>
@@ -150,27 +193,92 @@ export default function CheckInPage() {
 
         {step < NOTE_STEP ? (
           <>
-            <ChatBubble from="bot" text={strings.checkIn.botQuestions[DIMENSIONS[step]!]} />
-            <div className="mt-xs flex gap-xs">
-              {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
-                const v = stateVisual[level];
-                const label = strings.checkIn.answerLabels[DIMENSIONS[step]!][level];
-                return (
+            <ChatBubble from="bot" text={strings.checkIn.botQuestion(DIMENSIONS[step]!)} />
+            {!explaining ? (
+              <div className="mt-xs flex flex-col gap-xs">
+                {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
+                  const opt = strings.checkIn.answerOption(DIMENSIONS[step]!, level);
+                  return (
+                    <button
+                      key={level}
+                      onClick={() => answer(DIMENSIONS[step]!, level)}
+                      aria-label={opt.label}
+                      className="flex items-center gap-sm rounded-md px-md py-sm"
+                      style={{ backgroundColor: stateVisual[level].color }}
+                    >
+                      <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                      <span style={optionLabelStyle} className="whitespace-nowrap">
+                        {opt.label}
+                      </span>
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={beginExplain}
+                  aria-label={strings.checkIn.explainOption.label}
+                  className="flex items-center gap-sm rounded-md border border-border px-md py-sm"
+                  style={{ backgroundColor: color.surfaceRaised }}
+                >
+                  <span style={{ fontSize: 20 }}>{strings.checkIn.explainOption.icon}</span>
+                  <span style={explainOptionTextStyle} className="whitespace-nowrap">
+                    {strings.checkIn.explainOption.label}
+                  </span>
+                </button>
+              </div>
+            ) : (
+              <div className="mt-xs flex flex-col gap-sm">
+                <textarea
+                  autoFocus
+                  value={explainText}
+                  onChange={(e) => setExplainText(e.target.value.slice(0, EXPLAIN_MAX_LENGTH))}
+                  placeholder={strings.checkIn.explainPlaceholder}
+                  rows={3}
+                  style={{ ...type.body, fontSize: 17, color: color.textPrimary }}
+                  className="resize-none rounded-md border border-border bg-surface p-md placeholder:text-textMuted"
+                />
+                <p style={explainPromptStyle}>{strings.checkIn.explainLevelPrompt}</p>
+                <div className="flex flex-col gap-xs">
+                  {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
+                    const opt = strings.checkIn.answerOption(DIMENSIONS[step]!, level);
+                    const selected = explainLevel === level;
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => setExplainLevel(level)}
+                        aria-pressed={selected}
+                        aria-label={opt.label}
+                        className="flex items-center gap-sm rounded-md px-md py-sm transition-opacity"
+                        style={{
+                          backgroundColor: stateVisual[level].color,
+                          opacity: selected ? 1 : 0.5,
+                          outline: selected ? `2px solid ${color.textPrimary}` : undefined,
+                        }}
+                      >
+                        <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                        <span style={optionLabelStyle} className="whitespace-nowrap">
+                          {opt.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-sm">
                   <button
-                    key={level}
-                    onClick={() => answer(DIMENSIONS[step]!, level)}
-                    aria-label={label}
-                    className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md px-1 py-md"
-                    style={{ backgroundColor: v.color }}
+                    onClick={cancelExplain}
+                    className="flex-1 rounded-md border border-border py-sm text-center"
                   >
-                    <span style={{ fontSize: 22, color: color.bg }}>{v.icon}</span>
-                    <span style={optionLabelStyle} className="text-center">
-                      {label}
-                    </span>
+                    <span style={composerSkipStyle}>{strings.checkIn.explainCancel}</span>
                   </button>
-                );
-              })}
-            </div>
+                  <button
+                    onClick={sendExplain}
+                    disabled={!explainText.trim() || !explainLevel}
+                    className="flex-1 rounded-md bg-sage py-sm text-center disabled:opacity-50"
+                  >
+                    <span style={composerSendTextStyle}>{strings.checkIn.send}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         ) : null}
 

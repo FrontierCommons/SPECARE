@@ -15,7 +15,7 @@ const THANKED_KEY_PREFIX = 'sper.thankedCount.';
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const countStyle = { ...type.caption, color: color.textMuted };
-const verseStyle = { ...type.body, fontSize: 16, color: color.sage, fontStyle: 'italic' as const, lineHeight: '22px' };
+const verseStyle = { ...type.body, fontSize: 18, color: color.sage, fontWeight: 600 as const, fontStyle: 'italic' as const, lineHeight: '22px' };
 const encourageTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
 const thankBtnTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
 

@@ -17,11 +17,16 @@ export function ChatBubble({
   from,
   text,
   bubbleColor,
+  nowrap,
 }: {
   from: 'bot' | 'user';
   text: string;
   /** Overrides the default bubble background — used to echo the state color of a user's answer. */
   bubbleColor?: string;
+  /** Short, known-length text (a picked answer, not free prose) that must
+   * stay on one line — drops the 82%-width cap too, since a wrapped-off
+   * single line would otherwise just get clipped instead of shrinking. */
+  nowrap?: boolean;
 }) {
   const [entered, setEntered] = useState(false);
   useEffect(() => {
@@ -36,12 +41,17 @@ export function ChatBubble({
       }`}
     >
       <div
-        className={`max-w-[82%] rounded-lg px-md py-sm ${
+        className={`rounded-lg px-md py-sm ${nowrap ? 'max-w-full' : 'max-w-[82%]'} ${
           from === 'bot' ? 'rounded-bl-sm bg-surface' : 'rounded-br-sm bg-sage'
         }`}
         style={from === 'user' && bubbleColor ? { backgroundColor: bubbleColor } : undefined}
       >
-        <span style={from === 'user' ? userTextStyle : botTextStyle}>{text}</span>
+        <span
+          style={from === 'user' ? userTextStyle : botTextStyle}
+          className={nowrap ? 'whitespace-nowrap' : undefined}
+        >
+          {text}
+        </span>
       </div>
     </div>
   );
