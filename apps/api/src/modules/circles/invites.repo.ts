@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { db, type DB } from '../../config/db';
 import { invites, type InviteRow } from '../../db/schema';
 
@@ -21,18 +21,13 @@ export class InviteRepo {
     return row!;
   }
 
-  /** A valid invite by 6-char code: exists, unexpired, unredeemed. */
+  /** A valid invite by 6-char code: exists and unexpired. Not single-use —
+   * anyone with the code can join while it's still within its TTL. */
   async findRedeemableByCode(exec: Executor, code: string): Promise<InviteRow | null> {
     const [row] = await exec
       .select()
       .from(invites)
-      .where(
-        and(
-          eq(invites.code, code),
-          gt(invites.expiresAt, new Date()),
-          isNull(invites.redeemedBy),
-        ),
-      )
+      .where(and(eq(invites.code, code), gt(invites.expiresAt, new Date())))
       .limit(1);
     return row ?? null;
   }
@@ -42,19 +37,9 @@ export class InviteRepo {
     const [row] = await exec
       .select()
       .from(invites)
-      .where(
-        and(
-          eq(invites.id, id),
-          gt(invites.expiresAt, new Date()),
-          isNull(invites.redeemedBy),
-        ),
-      )
+      .where(and(eq(invites.id, id), gt(invites.expiresAt, new Date())))
       .limit(1);
     return row ?? null;
-  }
-
-  async markRedeemed(exec: Executor, id: string, userId: string): Promise<void> {
-    await exec.update(invites).set({ redeemedBy: userId }).where(eq(invites.id, id));
   }
 
   async codeExists(exec: Executor, code: string): Promise<boolean> {

@@ -24,7 +24,7 @@ const EnvSchema = z.object({
   MAGIC_LINK_TTL: z.string().default('15m'),
 
   // Invites
-  INVITE_CODE_TTL_HOURS: z.coerce.number().int().positive().default(72),
+  INVITE_CODE_TTL_HOURS: z.coerce.number().int().positive().default(24),
   APP_DEEPLINK_BASE: z.string().url().default('https://sper.app/invite'),
 
   // Push providers (optional in dev; delivery layer degrades to log-only)

@@ -63,10 +63,12 @@ export class CircleService {
   }
 
   /**
-   * Join via code or invite-link token. In ONE transaction: resolve a
-   * redeemable invite, add the member, mark the invite redeemed. Then notify
-   * existing members post-commit (FR #3). New members join with the pact
-   * un-agreed — they must accept it before accessing content.
+   * Join via code or invite-link token. Not single-use — the same code
+   * stays good for anyone until it expires (env.INVITE_CODE_TTL_HOURS), so
+   * a whole group can join off one shared invite. In ONE transaction:
+   * resolve a redeemable invite and add the member, then notify existing
+   * members post-commit (FR #3). New members join with the pact un-agreed —
+   * they must accept it before accessing content.
    */
   async join(
     args: { code?: string; inviteToken?: string },
@@ -88,7 +90,6 @@ export class CircleService {
       const existingMemberIds = await this.repo.memberIds(tx, invite.circleId);
 
       await this.repo.addMember(tx, invite.circleId, userId, false);
-      await this.invites.markRedeemed(invite.id, userId, tx);
 
       const circleRow = await this.repo.findById(tx, invite.circleId);
       if (!circleRow) throw new NotFoundError('Circle not found');

@@ -41,7 +41,11 @@ export class InviteService {
     };
   }
 
-  /** Resolve a redeemable invite from either a code or a link token (invite id). */
+  /**
+   * Resolve a redeemable invite from either a code or a link token (invite
+   * id). Not single-use — the same invite stays redeemable by anyone who has
+   * it until it expires, so multiple people can join off one shared code.
+   */
   async resolveRedeemable(
     args: { code?: string; inviteToken?: string },
     exec: Executor = this.database,
@@ -53,13 +57,9 @@ export class InviteService {
       invite = await this.repo.findRedeemableById(exec, args.inviteToken);
     }
     if (!invite) {
-      throw new NotFoundError('Invite is invalid, expired, or already used');
+      throw new NotFoundError('Invite is invalid or has expired');
     }
     return invite;
-  }
-
-  async markRedeemed(inviteId: string, userId: string, exec: Executor = this.database): Promise<void> {
-    await this.repo.markRedeemed(exec, inviteId, userId);
   }
 
   private async generateUniqueCode(exec: Executor): Promise<string> {

@@ -79,7 +79,7 @@ export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
           className={`flex w-fit items-center gap-xs rounded-pill border px-md py-xs disabled:opacity-60 ${PRESSABLE}`}
           style={{ borderColor: color.bloom, backgroundColor: color.bloomSoft }}
         >
-          <span style={{ fontSize: 16 }}>💌</span>
+          <span style={{ fontSize: 16 }}></span>
           <span style={thankYouTextStyle}>{strings.care.thankYou}</span>
         </button>
       </div>

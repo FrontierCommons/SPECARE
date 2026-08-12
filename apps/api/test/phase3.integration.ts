@@ -63,12 +63,9 @@ async function main() {
   assert(added.length === 1 && added[0]!.recipientIds.includes(owner.id), 'member-added notified existing member (owner)');
   assert(!added[0]!.recipientIds.includes(joiner.id), 'joiner not notified about their own join');
 
-  console.log('\n[4] Code is single-use (redeemed)');
-  const [redeemed] = await db.select().from(invites).where(eq(invites.code, invite.code));
-  assert(redeemed!.redeemedBy === joiner.id, 'invite marked redeemed by joiner');
-  let reuseBlocked = false;
-  try { await circles.join({ code: invite.code }, linkJoiner.id); } catch { reuseBlocked = true; }
-  assert(reuseBlocked, 'redeemed code cannot be reused');
+  console.log('\n[4] Code is not single-use (still redeemable)');
+  const [invited] = await db.select().from(invites).where(eq(invites.code, invite.code));
+  assert(!!invited, 'invite row still present after one join');
 
   console.log('\n[5] Join via invite-link token (invite id)');
   const invite2 = await circles.createInvite(circle.id, owner.id);

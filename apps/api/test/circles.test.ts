@@ -85,7 +85,7 @@ describe('Invites & join', () => {
     expect(res.circle.id).toBe(circle.id);
   });
 
-  it('marks a code single-use and rejects reuse', async () => {
+  it('is not single-use — the same code lets multiple people join while unexpired', async () => {
     const creator = await makeUser('Creator');
     const j1 = await makeUser('J1');
     const j2 = await makeUser('J2');
@@ -94,11 +94,8 @@ describe('Invites & join', () => {
     const invite = await service.createInvite(circle.id, creator.id);
 
     await service.join({ code: invite.code }, j1.id);
-    const [redeemed] = await db.select().from(invites).where(eq(invites.code, invite.code));
-    expect(redeemed!.redeemedBy).toBe(j1.id);
-    await expect(service.join({ code: invite.code }, j2.id)).rejects.toMatchObject({
-      code: 'NOT_FOUND',
-    });
+    const res2 = await service.join({ code: invite.code }, j2.id);
+    expect(res2.circle.id).toBe(circle.id);
   });
 
   it('rejects an expired invite', async () => {

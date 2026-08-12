@@ -104,7 +104,6 @@ export const invites = pgTable('invites', {
   code: char('code', { length: 6 }).unique(),
   email: text('email'),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  redeemedBy: uuid('redeemed_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

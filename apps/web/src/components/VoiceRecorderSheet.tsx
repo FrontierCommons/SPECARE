@@ -56,12 +56,16 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const cleanupStream = () => {
     if (timerRef.current) {
@@ -72,18 +76,51 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
     streamRef.current = null;
   };
 
+  // Swaps in a new preview URL (or clears it), always revoking whatever
+  // object URL it's replacing — the recorded blob never leaves this
+  // component, so this is the only thing that needs cleanup.
+  const setPreview = (url: string | null) => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+    setPlaying(false);
+  };
+
   useEffect(() => {
     if (!visible) {
       setPhase('idle');
       setError(null);
       setElapsedMs(0);
       setRecordedBlob(null);
+      setPreview(null);
       cleanupStream();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  useEffect(() => cleanupStream, []);
+  useEffect(
+    () => () => {
+      cleanupStream();
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    [],
+  );
+
+  const togglePreview = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      return;
+    }
+    if (audio.ended || (audio.duration > 0 && audio.currentTime >= audio.duration - 0.05)) {
+      audio.currentTime = 0;
+    }
+    audio.play().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('[VoiceRecorderSheet] failed to play preview', err);
+    });
+  };
 
   const stop = () => {
     recorderRef.current?.stop();
@@ -105,6 +142,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType || recorder.mimeType || 'audio/webm' });
         setRecordedBlob(blob);
+        setPreview(URL.createObjectURL(blob));
         setPhase('review');
         cleanupStream();
       };
@@ -127,6 +165,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
 
   const discard = () => {
     setRecordedBlob(null);
+    setPreview(null);
     setElapsedMs(0);
     setPhase('idle');
   };
@@ -198,7 +237,26 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
 
         {phase === 'review' ? (
           <>
+            {previewUrl ? (
+              <audio
+                ref={audioRef}
+                src={previewUrl}
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onEnded={() => setPlaying(false)}
+                className="hidden"
+              />
+            ) : null}
             <p style={timerStyle}>{timeLabel}</p>
+            <button
+              onClick={togglePreview}
+              aria-label={playing ? strings.care.voiceNotePause : strings.care.voiceNotePlay}
+              className={`flex h-14 w-14 items-center justify-center rounded-full ${PRESSABLE}`}
+              style={{ backgroundColor: color.sage }}
+            >
+              <span style={{ color: color.bg, fontWeight: 700, fontSize: 18 }}>{playing ? '❙❙' : '▶'}</span>
+            </button>
+            <p style={hintStyle}>{strings.care.recordPreviewHint}</p>
             <div className="flex gap-md">
               <button
                 onClick={discard}

@@ -64,6 +64,13 @@
       "when": 1786481793073,
       "tag": "0008_add_checkin_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786506861624,
+      "tag": "0009_drop_invite_redeemed_by",
+      "breakpoints": true
     }
   ]
 }
