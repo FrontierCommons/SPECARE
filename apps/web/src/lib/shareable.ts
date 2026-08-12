@@ -26,6 +26,13 @@ export interface ShareableNote {
   /** When the viewer's most recent action (of actionTypes) was logged —
    * shown as a small "X ago" under the promoted title. */
   actionAt?: string;
+  /** Everyone (including the viewer) who's reached out for this check-in —
+   * only meaningful alongside actionTypes, once a Care Card has promoted
+   * into this confirmation view. Feeds a collapsed "N people have reached
+   * out" that expands to the full list on hover/click. */
+  reachedNames?: string[];
+  /** Most recent reach-out among reachedNames, for that expanded detail. */
+  reachedAt?: string;
 }
 
 export function fromShareCard(card: ShareCardDTO): ShareableNote {
@@ -40,7 +47,15 @@ export function fromShareCard(card: ShareCardDTO): ShareableNote {
   };
 }
 
-export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[], actionAt?: string | null): ShareableNote {
+export function fromCareCard(
+  card: CareCardDTO,
+  options?: {
+    actionTypes?: TouchpointType[];
+    actionAt?: string | null;
+    reachedNames?: string[];
+    reachedAt?: string | null;
+  },
+): ShareableNote {
   return {
     checkin_id: card.checkin_id,
     target_user_id: card.target_user_id,
@@ -49,8 +64,10 @@ export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[], 
     flagged_dimensions: card.flagged_dimensions,
     like_count: card.like_count,
     liked_by_me: card.liked_by_me,
-    ...(actionTypes && actionTypes.length > 0 ? { actionTypes } : {}),
-    ...(actionAt ? { actionAt } : {}),
+    ...(options?.actionTypes && options.actionTypes.length > 0 ? { actionTypes: options.actionTypes } : {}),
+    ...(options?.actionAt ? { actionAt: options.actionAt } : {}),
+    ...(options?.reachedNames && options.reachedNames.length > 0 ? { reachedNames: options.reachedNames } : {}),
+    ...(options?.reachedAt ? { reachedAt: options.reachedAt } : {}),
   };
 }
 

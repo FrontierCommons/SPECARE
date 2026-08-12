@@ -401,6 +401,7 @@ export const strings = {
     pray: 'I prayed',
     logCare: 'I reached out',
     alreadyReached: (names: string) => `${names} already reached out`,
+    reachedCount: (n: number) => (n === 1 ? '1 person has reached out' : `${n} people have reached out`),
     acked: (name: string) => `${name} stepped up to hold space for you today.`,
     thankYou: 'Thank you!',
     gratitudeSent: 'You thanked everyone who reached out.',

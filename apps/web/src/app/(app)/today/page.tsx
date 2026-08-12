@@ -123,18 +123,28 @@ export default function TodayPage() {
   });
 
   const pendingCareCards: CareCardDTO[] = [];
-  const caredForEntries: Array<{ card: CareCardDTO; actionTypes: TouchpointType[]; actionAt: string | null }> = [];
+  const caredForEntries: Array<{
+    card: CareCardDTO;
+    actionTypes: TouchpointType[];
+    actionAt: string | null;
+    reachedNames: string[];
+    reachedAt: string | null;
+  }> = [];
   otherCareCards.forEach((card, i) => {
     const tpData = touchpointQueries[i]?.data;
     const reached = reachedNames(tpData, user?.id);
     if (reached.includes('You')) {
       const mine = (tpData ?? []).filter((t) => t.responder_id === user?.id);
       const myTypes = mine.map((t) => t.type);
-      const myLatestAt = mine.reduce<string | null>(
-        (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
-        null,
-      );
-      caredForEntries.push({ card, actionTypes: myTypes, actionAt: myLatestAt });
+      const latestAmong = (list: typeof mine) =>
+        list.reduce<string | null>((latest, t) => (!latest || t.created_at > latest ? t.created_at : latest), null);
+      caredForEntries.push({
+        card,
+        actionTypes: myTypes,
+        actionAt: latestAmong(mine),
+        reachedNames: reached,
+        reachedAt: latestAmong(tpData ?? []),
+      });
     } else {
       pendingCareCards.push(card);
     }
@@ -151,7 +161,9 @@ export default function TodayPage() {
       ? fromShareCard(share.data.find((c) => c.target_user_id === user?.id)!)
       : null;
   const othersShare: ShareableNote[] = [
-    ...caredForEntries.map(({ card, actionTypes, actionAt }) => fromCareCard(card, actionTypes, actionAt)),
+    ...caredForEntries.map(({ card, actionTypes, actionAt, reachedNames: names, reachedAt }) =>
+      fromCareCard(card, { actionTypes, actionAt, reachedNames: names, reachedAt }),
+    ),
     ...(share.data ?? []).filter((c) => c.target_user_id !== user?.id).map(fromShareCard),
   ].filter((item) => hasShareableContent(item) || !!item.actionTypes?.length);
 
@@ -434,7 +446,6 @@ function CareCardWithLog({
       }
       onSendMessage={(body) => sendMessage.mutateAsync({ body }).then(() => undefined)}
       alreadyReached={alreadyReached}
-      touchpoints={touchpoints.data}
     />
   );
 }

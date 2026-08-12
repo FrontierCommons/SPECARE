@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { CheckInDimension, SperEntryDTO } from '@sper/shared-types';
 import { color, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
@@ -8,10 +9,12 @@ import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { relativeTime } from '../lib/time';
 import type { ShareableNote } from '../lib/shareable';
 import { LikeButton } from './LikeButton';
+import { PRESSABLE } from '../design/interaction';
 
 const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.textPrimary};
 const dimTextStyle = { ...type.caption, fontWeight: 600 as const, color: color.textPrimary };
 const actionTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
+const reachedCountStyle = { ...type.caption, fontSize: 12, color: color.sage };
 const likeCountStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 
 interface Props {
@@ -34,6 +37,11 @@ interface Props {
  * notice and like.
  */
 export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Props) {
+  // Collapsed by default — who-and-exactly-when reads as pressure/comparison
+  // to whoever hasn't acted yet; here (already-responded) it's just a nice
+  // "you weren't the only one" detail worth an explicit hover/tap to see.
+  const [showReachedDetail, setShowReachedDetail] = useState(false);
+
   // Only the Thriving/Steady per-dimension answers ever show here — never
   // the flagged (Heavy/In the Pit) dimension's own note, and never the
   // untagged general note either, since that's free text that could be
@@ -56,13 +64,33 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
       [...new Set(actionTypes.map((t) => strings.care.actionVerb[t]))],
       card.target_name,
     );
+    const reachedNames = card.reachedNames ?? [];
     return (
       <div
-        className="rounded-lg border p-lg shadow-sm"
+        className="flex flex-col gap-xs rounded-lg border p-lg shadow-sm"
         style={{ backgroundColor: color.bg, borderColor: color.sage }}
       >
         <p style={titleStyle}>{title}</p>
         {card.actionAt ? <p style={actionTimeStyle}>{relativeTime(card.actionAt)}</p> : null}
+        {reachedNames.length > 0 ? (
+          <div className="mt-xs flex flex-col items-start gap-xs">
+            <button
+              type="button"
+              onMouseEnter={() => setShowReachedDetail(true)}
+              onMouseLeave={() => setShowReachedDetail(false)}
+              onClick={() => setShowReachedDetail((v) => !v)}
+              className={`underline-offset-2 hover:underline ${PRESSABLE}`}
+            >
+              <span style={reachedCountStyle}>{strings.care.reachedCount(reachedNames.length)}</span>
+            </button>
+            {showReachedDetail ? (
+              <>
+                <p style={actionTimeStyle}>{strings.care.alreadyReached(reachedNames.join(', '))}</p>
+                
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     );
   }

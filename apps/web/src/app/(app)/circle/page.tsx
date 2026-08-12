@@ -26,7 +26,7 @@ const chipAddTextStyle = { ...type.label, color: color.textMuted };
 const memberNameStyle = { ...type.heading, color: color.textPrimary };
 const memberTzStyle = { ...type.caption, color: color.textMuted };
 const pactStyle = { ...type.caption };
-const leaveTextStyle = { ...type.label, color: color.statePit };
+const leaveTextStyle = { ...type.label, color: color.textPrimary };
 
 export default function CirclePage() {
   const router = useRouter();

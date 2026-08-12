@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointDTO, TouchpointType } from '@sper/shared-types';
+import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointType } from '@sper/shared-types';
 import { color, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { parseCheckInNote } from '../lib/checkinNote';
-import { relativeTime } from '../lib/time';
 import { pickEncourageVerse } from '../lib/encourageVerses';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
@@ -22,10 +21,6 @@ interface Props {
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   onSendMessage: (body: string) => Promise<void>;
   alreadyReached?: string[]; // responder names
-  /** Same touchpoints `alreadyReached` was derived from — kept separate so
-   * existing callers don't have to change, just used here to timestamp the
-   * "already reached out" line. */
-  touchpoints?: TouchpointDTO[];
 }
 
 const titleStyle = { ...type.title, color: color.textPrimary };
@@ -35,9 +30,6 @@ const noteStyle = { ...type.caption,color: color.amber };
 const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sage };
 const actionTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
 const toggleTextStyle = { ...type.label, color: color.sage };
-const reachedStyle = { ...type.caption, color: color.textMuted };
-const reachedSelfStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
-const reachedTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
 const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
 
 /**
@@ -56,16 +48,8 @@ export function CareCard({
   onSendVoiceNote,
   onSendMessage,
   alreadyReached,
-  touchpoints,
 }: Props) {
   const selfReached = alreadyReached?.includes('You') ?? false;
-  // Most recent reach-out wins — the line above already lists everyone by
-  // name, so one relative timestamp under it reads as "how fresh is this,"
-  // not a full per-person log.
-  const latestReachedAt = (touchpoints ?? []).reduce<string | null>(
-    (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
-    null,
-  );
   const [recorderVisible, setRecorderVisible] = useState(false);
   const [composerVisible, setComposerVisible] = useState(false);
   // Collapsed by default — these aren't part of what needs a response, so
@@ -151,7 +135,6 @@ export function CareCard({
 
       {!selfReached ? (
         <>
-          <p style={verseStyle}>{pickEncourageVerse(card.checkin_id)}</p>
           <ResponderGuidanceBox />
           <div className="flex flex-col gap-sm">
             <Action label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} />
@@ -162,15 +145,7 @@ export function CareCard({
         </>
       ) : null}
 
-      {alreadyReached && alreadyReached.length > 0 ? (
-        <div className="flex flex-col items-center gap-xs">
-          <p style={selfReached ? reachedSelfStyle : reachedStyle} className="text-center">
-            {selfReached ? '✓ ' : ''}
-            {strings.care.alreadyReached(alreadyReached.join(', '))}
-          </p>
-          {latestReachedAt ? <p style={reachedTimeStyle}>{relativeTime(latestReachedAt)}</p> : null}
-        </div>
-      ) : null}
+      {!selfReached ? <p style={verseStyle}>{pickEncourageVerse(card.checkin_id)}</p> : null}
 
       <VoiceRecorderSheet
         visible={recorderVisible}

@@ -23,8 +23,8 @@ interface Props {
   alreadyReached?: string[];
   /** Touchpoints of any kind, for the self-view tree's care count. */
   touchpointCount?: number;
-  /** Same touchpoints `touchpointCount` was derived from — feeds the Care
-   * Card's "already reached out" relative timestamp. */
+  /** Same touchpoints `touchpointCount` was derived from — feeds the
+   * promoted ShareCard's "N people have reached out" relative timestamp. */
   touchpoints?: TouchpointDTO[];
   /** The viewer's own touchpoint type(s) already logged for this check-in —
    * drives the promoted ShareCard's "You [action] X!" title. */
@@ -87,6 +87,10 @@ export function MemberDetailSheet({
   if (!entry) return null;
   const agg = aggregateState(entry);
   const reached = alreadyReached?.includes('You') ?? false;
+  const reachedAt = (touchpoints ?? []).reduce<string | null>(
+    (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
+    null,
+  );
 
   return (
     <div className="fixed inset-0 z-30">
@@ -132,7 +136,7 @@ export function MemberDetailSheet({
           ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
             reached ? (
               <ShareCard
-                card={fromCareCard(careCard, actionTypes, actionAt)}
+                card={fromCareCard(careCard, { actionTypes, actionAt, reachedNames: alreadyReached, reachedAt })}
                 isSelf={false}
                 entry={entry}
                 onToggleLike={onToggleLike}
@@ -146,7 +150,6 @@ export function MemberDetailSheet({
                 onSendVoiceNote={onSendVoiceNote}
                 onSendMessage={onSendMessage}
                 alreadyReached={alreadyReached}
-                touchpoints={touchpoints}
               />
             )
           ) : null}
