@@ -374,11 +374,12 @@ export const strings = {
     answerOption(dim: CheckInDimension, level: StateLevel): AnswerOption {
       return todaysVariant(dim).options[level];
     },
-    explainOption: { icon: '💬', label: 'I’d rather explain' },
-    explainPlaceholder: 'What’s going on?',
-    explainLevelPrompt: 'Which option aligns best with you now?',
+    explainOption: { icon: '💬', label: 'I want to clarify' },
+    explainIntro: 'Share what you have on your mind (if comfortable)',
+    explainPlaceholder: 'What’s going on? (Optional)',
+    explainLevelPrompt: 'Where on the scale are you feeling in this area?',
     explainCancel: 'Cancel',
-    botNotePrompt: 'Anything you want to add? Totally optional.',
+    botNotePrompt: 'Anything you want to add? (Optional)',
     botOutro: 'Got it. Sending this to your circle.',
     notePlaceholderShort: 'Type a note…',
     send: 'Send',
@@ -470,10 +471,13 @@ export const strings = {
       'Blocked in your browser’s site settings. Allow notifications for this site to turn it on.',
     browserNotificationsEnabled: 'Enabled ✓',
     enableBrowserNotifications: 'Enable',
+    disableBrowserNotifications: 'Disable',
     browserNotificationsFailed: "Couldn't enable notifications. Try again.",
+    browserNotificationsDisableFailed: "Couldn't disable notifications. Try again.",
     timezone: 'Timezone',
     frequency: 'Check-in frequency',
     frequencyBody: 'How often should we prompt you to check in?',
+    nextReminder: (when: string) => `Next reminder around ${when}`,
     frequencyOnce: 'Once a day',
     frequencyTwice: 'Twice a day',
     frequencyThrice: 'Three times a day',
@@ -516,7 +520,7 @@ export const strings = {
       },
       {
         title: 'A daily check-in',
-        body: 'Once a day (or as often as you choose), answer one honest question for each part of life. Your answers color your ring, so your circle can see how you’re really doing without you having to explain it.',
+        body: 'Once a day (or as often as you choose), answer one honest question for each part of life. Your answers color your ring, so your circle can see how you’re really doing without you having to explain it. If none of the options quite fit, add your own words and just pick whichever color comes closest — no label, just the color:',
       },
       {
         title: 'The Care Card',
@@ -527,6 +531,15 @@ export const strings = {
         body: 'Send a voice note, send a message, or simply pray — any one lets someone know they’re not alone. Every bit of care keeps their tree green and growing; left too long, it starts to wither. Notice, and show up — that’s the whole idea.',
       },
     ],
+    /** What each ring/check-in color means, ordered best → worst to match
+     * STATE_LEVELS. Shown in the tutorial legend since the color-only picker
+     * in the check-in flow carries no text of its own. */
+    colorMeaning: {
+      Thriving: 'Clear skies, the best it gets.',
+      Steady: 'Calm and holding steady.',
+      Heavy: 'Clouds rolling in, a harder day.',
+      'In the Pit': 'Storm clouds, running on empty.',
+    },
   },
 
   grace: {

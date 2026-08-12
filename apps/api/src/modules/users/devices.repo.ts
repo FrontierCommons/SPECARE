@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, type DB } from '../../config/db';
 import { deviceTokens, type DeviceTokenRow } from '../../db/schema';
 import type { DevicePlatform } from '@sper/shared-types';
@@ -41,6 +41,12 @@ export class DeviceRepo {
   /** Remove a token the provider reported as unregistered/invalid. */
   async remove(token: string, exec: Executor = db): Promise<void> {
     await exec.delete(deviceTokens).where(eq(deviceTokens.token, token));
+  }
+
+  /** The user's own explicit "turn off notifications" — scoped to their own
+   * token so one member can never unregister another's device. */
+  async removeForUser(userId: string, token: string, exec: Executor = db): Promise<void> {
+    await exec.delete(deviceTokens).where(and(eq(deviceTokens.userId, userId), eq(deviceTokens.token, token)));
   }
 }
 

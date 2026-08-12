@@ -26,3 +26,16 @@ export function aggregateState(entry: SperEntryDTO): StateLevel | null {
   for (const level of order) if (states.includes(level)) return level;
   return null;
 }
+
+export const SCORE_MIN = 1;
+export const SCORE_MAX = 10;
+
+/** Maps the check-in explain flow's 1–10 slider score down to one of the
+ * four states the server actually stores — 9-10 Thriving, 6-8 Steady, 4-5
+ * Heavy, 1-3 In the Pit. */
+export function levelForScore(score: number): StateLevel {
+  if (score >= 9) return 'Thriving';
+  if (score >= 6) return 'Steady';
+  if (score >= 4) return 'Heavy';
+  return 'In the Pit';
+}

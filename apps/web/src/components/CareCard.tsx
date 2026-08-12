@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointType } from '@sper/shared-types';
-import { color, type } from '../design/tokens';
+import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointDTO, TouchpointType } from '@sper/shared-types';
+import { color, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { parseCheckInNote } from '../lib/checkinNote';
+import { relativeTime } from '../lib/time';
+import { pickEncourageVerse } from '../lib/encourageVerses';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
 import { MessageComposerSheet } from './MessageComposerSheet';
@@ -20,10 +22,14 @@ interface Props {
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   onSendMessage: (body: string) => Promise<void>;
   alreadyReached?: string[]; // responder names
+  /** Same touchpoints `alreadyReached` was derived from — kept separate so
+   * existing callers don't have to change, just used here to timestamp the
+   * "already reached out" line. */
+  touchpoints?: TouchpointDTO[];
 }
 
 const titleStyle = { ...type.title, color: color.textPrimary };
-const dimTextStyle = { ...type.caption, color: color.amber };
+const dimTextStyle = { ...type.caption, color: color.bg, fontWeight: 600 as const };
 const neutralAnswerStyle = { ...type.caption, color: color.textSecondary };
 const noteStyle = { ...type.caption,color: color.amber };
 const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sage };
@@ -31,6 +37,7 @@ const actionTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 6
 const toggleTextStyle = { ...type.label, color: color.sage };
 const reachedStyle = { ...type.caption, color: color.textMuted };
 const reachedSelfStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
+const reachedTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
 const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
 
 /**
@@ -42,8 +49,23 @@ const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600
  * a ShareCard instead — so everything here assumes the viewer hasn't acted
  * yet, and stays purely informational + collapsed for anything not flagged.
  */
-export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessage, alreadyReached }: Props) {
+export function CareCard({
+  card,
+  entry,
+  onLogCare,
+  onSendVoiceNote,
+  onSendMessage,
+  alreadyReached,
+  touchpoints,
+}: Props) {
   const selfReached = alreadyReached?.includes('You') ?? false;
+  // Most recent reach-out wins — the line above already lists everyone by
+  // name, so one relative timestamp under it reads as "how fresh is this,"
+  // not a full per-person log.
+  const latestReachedAt = (touchpoints ?? []).reduce<string | null>(
+    (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
+    null,
+  );
   const [recorderVisible, setRecorderVisible] = useState(false);
   const [composerVisible, setComposerVisible] = useState(false);
   // Collapsed by default — these aren't part of what needs a response, so
@@ -86,9 +108,17 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessag
           const dim = d as CheckInDimension;
           const level = entry ? dimState(entry, dim) : null;
           const answer = perDimension[dim] ?? (level ? strings.checkIn.answerOption(dim, level).label : null);
+          // Filled with the state's own color, same as a selected StateBadge —
+          // the pill should read as what was actually answered, not a fixed
+          // "this is flagged" amber regardless of how heavy it really is.
+          const stateColor = level ? stateVisual[level].color : null;
           return (
-            <span key={d} className="rounded-pill bg-surfaceRaised px-md py-xs">
-              <span style={dimTextStyle}>
+            <span
+              key={d}
+              className="rounded-pill w-fit border px-md py-xs"
+              style={{ backgroundColor: stateColor ?? color.surfaceRaised, borderColor: stateColor ?? color.amber }}
+            >
+              <span style={{ ...dimTextStyle}}>
                 {strings.checkIn.dimensions[dim]}
                 {answer ? `: ${answer}` : ''}
               </span>
@@ -121,21 +151,25 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessag
 
       {!selfReached ? (
         <>
-          {card.verse ? <p style={verseStyle}>{card.verse}</p> : null}
+          <p style={verseStyle}>{pickEncourageVerse(card.checkin_id)}</p>
           <ResponderGuidanceBox />
           <div className="flex flex-col gap-sm">
             <Action label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} />
             <Action label={strings.care.sendMessage} onClick={() => setComposerVisible(true)} />
+            <Action label={strings.care.call} onClick={() => onLogCare('CallMade')} />
             <Action label={strings.care.pray} onClick={() => onLogCare('PrayedFor')} />
           </div>
         </>
       ) : null}
 
       {alreadyReached && alreadyReached.length > 0 ? (
-        <p style={selfReached ? reachedSelfStyle : reachedStyle} className="text-center">
-          {selfReached ? '✓ ' : ''}
-          {strings.care.alreadyReached(alreadyReached.join(', '))}
-        </p>
+        <div className="flex flex-col items-center gap-xs">
+          <p style={selfReached ? reachedSelfStyle : reachedStyle} className="text-center">
+            {selfReached ? '✓ ' : ''}
+            {strings.care.alreadyReached(alreadyReached.join(', '))}
+          </p>
+          {latestReachedAt ? <p style={reachedTimeStyle}>{relativeTime(latestReachedAt)}</p> : null}
+        </div>
       ) : null}
 
       <VoiceRecorderSheet

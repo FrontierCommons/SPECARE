@@ -76,6 +76,10 @@ export interface RegisterDeviceRequest {
   platform: DevicePlatform;
 }
 
+export interface UnregisterDeviceRequest {
+  token: string;
+}
+
 export interface UpdateProfileRequest {
   notifications_paused?: boolean;
   timezone?: string;

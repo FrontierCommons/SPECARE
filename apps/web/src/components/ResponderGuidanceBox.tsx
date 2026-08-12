@@ -6,6 +6,9 @@ const textStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as 
 /**
  * Shown on every Care Card, right above the action buttons — a short, warm
  * lead-in rather than a paragraph of instructions on how to comfort someone.
+ * The verse itself lives in the slot above this (see CareCard), sourced from
+ * lib/encourageVerses — kept separate so this box stays reusable without a
+ * verse baked in.
  */
 export function ResponderGuidanceBox() {
   return <p style={textStyle}>{strings.care.guidance}</p>;

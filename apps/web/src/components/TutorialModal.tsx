@@ -26,7 +26,8 @@ const titleStyle = { ...type.title, fontSize: 32, color: color.textPrimary };
 const bodyStyle = { ...type.body, fontSize: 21, lineHeight: '32px', color: color.textSecondary };
 const primaryTextStyle = { ...type.label, fontSize: 19, color: color.bg, fontWeight: 600 as const };
 const backTextStyle = { ...type.label, fontSize: 19, color: color.sage };
-const legendLabelStyle = { ...type.caption, fontSize: 14, color: color.textMuted };
+const legendLabelStyle = { ...type.label, fontSize: 15, fontWeight: 600 as const, color: color.textPrimary };
+const legendDescStyle = { ...type.caption, fontSize: 13, color: color.textMuted };
 const orbNameStyle = { ...type.caption, fontSize: 15, color: color.textSecondary };
 
 /**
@@ -123,21 +124,39 @@ function CircleExample() {
         <ExampleOrb name="You" states={mine} />
         <ExampleOrb name="Alex" states={friend} />
       </div>
-      <div className="flex gap-md">
-        {Object.values(stateVisual).map((v) => (
-          <span key={v.label} className="flex flex-col items-center gap-xs">
-            <span className="h-8 w-8 rounded-pill" style={{ backgroundColor: v.color }} />
-            <span style={legendLabelStyle}>{v.label}</span>
-          </span>
-        ))}
-      </div>
+      <ColorLegend />
+    </div>
+  );
+}
+
+/** What each of the four state colors means — shared by the circle-ring step
+ * and the check-in step, since the check-in's "add your own words" picker
+ * shows these same colors with no label attached. */
+function ColorLegend() {
+  return (
+    <div className="flex w-full max-w-xs flex-col gap-sm">
+      {(Object.entries(stateVisual) as [StateLevel, { color: string; icon: string; label: string }][]).map(
+        ([level, v]) => (
+          <div key={level} className="flex items-center gap-sm text-left">
+            <span className="h-8 w-8 flex-shrink-0 rounded-pill" style={{ backgroundColor: v.color }} />
+            <div className="flex flex-col">
+              <span style={legendLabelStyle} className="whitespace-nowrap">
+                {v.label}
+              </span>
+              <span style={legendDescStyle} className="whitespace-nowrap">
+                {strings.tutorial.colorMeaning[level]}
+              </span>
+            </div>
+          </div>
+        ),
+      )}
     </div>
   );
 }
 
 const ORB_SIZE = 120;
 const ORB_STROKE = 12;
-const ORB_GAP_DEG = 8;
+const ORB_GAP_DEG = 10; // matches MemberOrb's gap — see its comment on butt caps vs. round-cap encroachment
 const ORB_RADIUS = (ORB_SIZE - ORB_STROKE) / 2;
 const ORB_CIRCUMFERENCE = 2 * Math.PI * ORB_RADIUS;
 const ORB_SEGMENT_DEG = 360 / DIMENSIONS.length;
@@ -164,7 +183,7 @@ function ExampleOrb({ name, states }: { name: string; states: Record<CheckInDime
                 stroke={stateVisual[states[dim]].color}
                 strokeWidth={ORB_STROKE}
                 strokeDasharray={ORB_DASH}
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 fill="none"
                 transform={`rotate(${rotation} ${ORB_SIZE / 2} ${ORB_SIZE / 2})`}
               />
@@ -190,6 +209,7 @@ function CheckInExample() {
           <StateBadge key={state} state={state} selected={state === 'Steady'} compact />
         ))}
       </div>
+      <ColorLegend />
     </div>
   );
 }

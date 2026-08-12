@@ -23,6 +23,9 @@ export interface ShareableNote {
    * title instead of the generic "wants to share" one, and means the card
    * should render even when there's nothing positive left to show. */
   actionTypes?: TouchpointType[];
+  /** When the viewer's most recent action (of actionTypes) was logged —
+   * shown as a small "X ago" under the promoted title. */
+  actionAt?: string;
 }
 
 export function fromShareCard(card: ShareCardDTO): ShareableNote {
@@ -37,7 +40,7 @@ export function fromShareCard(card: ShareCardDTO): ShareableNote {
   };
 }
 
-export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[]): ShareableNote {
+export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[], actionAt?: string | null): ShareableNote {
   return {
     checkin_id: card.checkin_id,
     target_user_id: card.target_user_id,
@@ -47,6 +50,7 @@ export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[]):
     like_count: card.like_count,
     liked_by_me: card.liked_by_me,
     ...(actionTypes && actionTypes.length > 0 ? { actionTypes } : {}),
+    ...(actionAt ? { actionAt } : {}),
   };
 }
 

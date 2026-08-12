@@ -14,7 +14,8 @@ import { useSession } from '../../../state/session';
 import { ChatBubble } from '../../../components/ChatBubble';
 import { StateBadge } from '../../../components/StateBadge';
 import { NextCheckInCountdown } from '../../../components/NextCheckInCountdown';
-import { DIMENSIONS, dimState } from '../../../lib/checkinState';
+import { DIMENSIONS, dimState, levelForScore } from '../../../lib/checkinState';
+import { LevelSlider } from '../../../components/LevelSlider';
 import { buildCheckInNote } from '../../../lib/checkinNote';
 import { relativeTime } from '../../../lib/time';
 import { enqueueCheckIn } from '../../../lib/offlineQueue';
@@ -58,7 +59,8 @@ export default function CheckInPage() {
   const [explanations, setExplanations] = useState<Explanations>({});
   const [explaining, setExplaining] = useState(false);
   const [explainText, setExplainText] = useState('');
-  const [explainLevel, setExplainLevel] = useState<StateLevel | null>(null);
+  const [explainScore, setExplainScore] = useState<number | null>(null);
+  const explainLevel = explainScore !== null ? levelForScore(explainScore) : null;
   const [step, setStep] = useState(0);
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -101,7 +103,7 @@ export default function CheckInPage() {
           setExplanations({});
           setExplaining(false);
           setExplainText('');
-          setExplainLevel(null);
+          setExplainScore(null);
           setStep(0);
           setNote('');
           setUpdating(true);
@@ -118,24 +120,25 @@ export default function CheckInPage() {
 
   const beginExplain = () => {
     setExplainText('');
-    setExplainLevel(null);
+    setExplainScore(null);
     setExplaining(true);
   };
 
   const cancelExplain = () => {
     setExplaining(false);
     setExplainText('');
-    setExplainLevel(null);
+    setExplainScore(null);
   };
 
   const sendExplain = () => {
-    if (!explainText.trim() || !explainLevel) return;
+    if (!explainLevel) return;
     const dim = DIMENSIONS[step]!;
+    const trimmed = explainText.trim();
     setSel((s) => ({ ...s, [dim]: explainLevel }));
-    setExplanations((e) => ({ ...e, [dim]: explainText.trim() }));
+    if (trimmed) setExplanations((e) => ({ ...e, [dim]: trimmed }));
     setExplaining(false);
     setExplainText('');
-    setExplainLevel(null);
+    setExplainScore(null);
     setStep((s) => s + 1);
   };
 
@@ -228,6 +231,7 @@ export default function CheckInPage() {
               </div>
             ) : (
               <div className="mt-xs flex flex-col gap-sm">
+                <p style={explainPromptStyle}>{strings.checkIn.explainIntro}</p>
                 <textarea
                   autoFocus
                   value={explainText}
@@ -238,31 +242,7 @@ export default function CheckInPage() {
                   className="resize-none rounded-md border border-border bg-surface p-md placeholder:text-textMuted"
                 />
                 <p style={explainPromptStyle}>{strings.checkIn.explainLevelPrompt}</p>
-                <div className="flex flex-col gap-xs">
-                  {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
-                    const opt = strings.checkIn.answerOption(DIMENSIONS[step]!, level);
-                    const selected = explainLevel === level;
-                    return (
-                      <button
-                        key={level}
-                        onClick={() => setExplainLevel(level)}
-                        aria-pressed={selected}
-                        aria-label={opt.label}
-                        className={`flex items-center gap-sm rounded-md px-md py-sm transition-opacity ${PRESSABLE}`}
-                        style={{
-                          backgroundColor: stateVisual[level].color,
-                          opacity: selected ? 1 : 0.5,
-                          outline: selected ? `2px solid ${color.textPrimary}` : undefined,
-                        }}
-                      >
-                        <span style={{ fontSize: 20 }}>{opt.icon}</span>
-                        <span style={optionLabelStyle} className="whitespace-nowrap">
-                          {opt.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <LevelSlider value={explainScore} onChange={setExplainScore} />
                 <div className="flex gap-sm">
                   <button
                     onClick={cancelExplain}
@@ -272,7 +252,7 @@ export default function CheckInPage() {
                   </button>
                   <button
                     onClick={sendExplain}
-                    disabled={!explainText.trim() || !explainLevel}
+                    disabled={!explainLevel}
                     className={`flex-1 rounded-md bg-sage py-sm text-center disabled:opacity-50 ${PRESSABLE}`}
                   >
                     <span style={composerSendTextStyle}>{strings.checkIn.send}</span>

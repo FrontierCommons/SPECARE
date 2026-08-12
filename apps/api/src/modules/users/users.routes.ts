@@ -15,6 +15,7 @@ import { NotFoundError } from '../../shared/errors';
 
 const platformEnum = z.enum(DEVICE_PLATFORMS as unknown as [string, ...string[]]);
 const registerSchema = z.object({ token: z.string().min(1), platform: platformEnum });
+const unregisterSchema = z.object({ token: z.string().min(1) });
 const checkinFrequencyEnum = z.enum(CHECKIN_FREQUENCIES as unknown as [string, ...string[]]);
 const updateProfileSchema = z.object({
   notifications_paused: z.boolean().optional(),
@@ -59,5 +60,11 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     const { token, platform } = registerSchema.parse(req.body);
     const row = await deviceRepo.register(currentUserId(req), token, platform as DevicePlatform);
     return reply.code(201).send({ device: { id: row.id, platform: row.platform } });
+  });
+
+  app.delete('/devices', async (req, reply) => {
+    const { token } = unregisterSchema.parse(req.body);
+    await deviceRepo.removeForUser(currentUserId(req), token);
+    return reply.code(200).send({ ok: true });
   });
 }

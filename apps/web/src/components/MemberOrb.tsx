@@ -7,7 +7,11 @@ import { PRESSABLE } from '../design/interaction';
 
 const SIZE = 96; // overall ring diameter
 const STROKE = 10; // bold — this is the whole point
-const GAP_DEG = 8; // breathing room between arcs
+// Round line caps extend past each arc's geometric endpoint by ~STROKE/2 on
+// both sides, so a 10px stroke was eating most of the old 8° gap (only ~6px
+// of arc length at this radius) — two adjacent segments could visually touch.
+// Butt caps make the gap exactly match GAP_DEG with no encroachment.
+const GAP_DEG = 10; // breathing room between arcs
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const SEGMENT_DEG = 360 / DIMENSIONS.length;
@@ -58,7 +62,7 @@ export function MemberOrb({
                 stroke={arcColor}
                 strokeWidth={STROKE}
                 strokeDasharray={DASH}
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 fill="none"
                 transform={`rotate(${rotation} ${SIZE / 2} ${SIZE / 2})`}
               />

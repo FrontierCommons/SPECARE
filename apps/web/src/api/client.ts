@@ -17,6 +17,7 @@ import type {
   TouchpointDTO,
   LogTouchpointRequest,
   RegisterDeviceRequest,
+  UnregisterDeviceRequest,
   UpdateProfileRequest,
   UserDTO,
   VoiceNoteDTO,
@@ -232,6 +233,8 @@ export const api = {
   // Devices
   registerDevice: (body: RegisterDeviceRequest) =>
     raw<{ device: { id: string; platform: string } }>('/devices', { method: 'POST', body }),
+  unregisterDevice: (body: UnregisterDeviceRequest) =>
+    raw<{ ok: boolean }>('/devices', { method: 'DELETE', body }),
 };
 
 export default api;

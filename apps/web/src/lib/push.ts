@@ -88,3 +88,25 @@ export async function enablePushNotifications(): Promise<void> {
 
   await api.registerDevice({ token: JSON.stringify(subscription.toJSON()), platform: 'web' });
 }
+
+/**
+ * The explicit, user-initiated opt-out: unsubscribes this browser from push
+ * and tells the server to drop the device token. Leaves the underlying
+ * `Notification` permission alone — that's the browser's own to revoke, from
+ * its site settings, not something a page can programmatically un-grant.
+ */
+export async function disablePushNotifications(): Promise<void> {
+  if (!pushSupported()) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  if (!subscription) return;
+  const token = JSON.stringify(subscription.toJSON());
+  await subscription.unsubscribe();
+  try {
+    await api.unregisterDevice({ token });
+  } catch {
+    // Best-effort — the browser-side unsubscribe already took effect even if
+    // the server-side row cleanup fails; a stale token gets pruned the next
+    // time a send to it fails (see deviceRepo.remove).
+  }
+}

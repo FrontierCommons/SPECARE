@@ -14,6 +14,7 @@ export const color = {
   surface: '#252A2F',
   surfaceRaised: '#3c4b59',
   border: '#3A424A',
+  option: "#111827",
 
   textPrimary: '#ECE7DF', // warm off-white
   textSecondary: '#A7A399',
@@ -25,11 +26,15 @@ export const color = {
   sageDeep: '#5F7A5C',
   amber: '#c7a923', // muted amber — warmth, not alarm
 
-  // State colors — weather, not a scoreboard.
-  stateThriving: '#368c2a', // clear sky (sage)
-  stateSteady: '#369ece', // calm blue
-  stateHeavy: '#d2a477', // overcast amber
-  statePit: '#bba6af', // muted storm plum (never a harsh red)
+  // State colors — weather, not a scoreboard. Tuned for even saturation
+  // across all four (the old set ranged from 54% down to a nearly-grey 13%
+  // on statePit, which read as "dull" next to the richer green/blue) while
+  // keeping lightness in the same band so contrast against dark fill-text
+  // (color.bg, used when one of these is a filled background) doesn't shift.
+  stateThriving: '#349B27', // clear sky (sage)
+  stateSteady: '#2D9ED2', // calm blue
+  stateHeavy: '#D89446', // overcast amber
+  statePit: '#9456B3', // muted storm plum (never a harsh red)
 
   // Warmth accent — reserved for encouragement: the one place the app should
   // feel like a hug, not a status readout.

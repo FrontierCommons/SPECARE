@@ -31,6 +31,7 @@ import { VoiceNoteBanner } from '../../../components/VoiceNoteBanner';
 import { MessageBanner } from '../../../components/MessageBanner';
 import { Toast } from '../../../components/Toast';
 import { useNewPrayerAlert } from '../../../lib/useNewPrayerAlert';
+import { useNewGratitudeAlert } from '../../../lib/useNewGratitudeAlert';
 import { reachedNames } from '../../../lib/touchpoints';
 import { fromCareCard, fromShareCard, hasShareableContent, type ShareableNote } from '../../../lib/shareable';
 import { PRESSABLE } from '../../../design/interaction';
@@ -39,6 +40,9 @@ import { strings } from '../../../design/strings';
 
 const titleStyle = { ...type.display, color: color.textPrimary };
 const circleNameStyle = { ...type.heading, color: color.sage, fontWeight: "bold" };
+const circleChevronStyle = { ...type.heading, color: color.sage };
+const circleMenuItemStyle = { ...type.label, color: color.textSecondary };
+const circleMenuItemActiveStyle = { ...type.label, color: color.sage, fontWeight: 600 as const };
 const emptyStyle = { ...type.body, color: color.textSecondary, fontWeight: "italic",  };
 const ctaTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const tabTextStyle = { ...type.caption, color: color.textPrimary };
@@ -47,9 +51,11 @@ const thankedTextStyle = { ...type.label, fontWeight: 600 as const, color: color
 
 export default function TodayPage() {
   const router = useRouter();
-  const { activeCircleId, user, circles } = useSession();
+  const { activeCircleId, setActiveCircle, user, circles } = useSession();
   const circleId = activeCircleId!;
   const circleName = circles.find((c) => c.circle_id === circleId)?.name;
+  const agreedCircles = circles.filter((c) => c.covenant_agreed);
+  const [circleMenuOpen, setCircleMenuOpen] = useState(false);
   const sper = useSper(circleId);
   const care = useCareCards(circleId);
   const share = useShareCards(circleId);
@@ -57,19 +63,33 @@ export default function TodayPage() {
   const [selected, setSelected] = useState<SperEntryDTO | null>(null);
   const [activeTab, setActiveTab] = useState<'new' | 'responded'>('new');
 
-  const [prayerToastVisible, setPrayerToastVisible] = useState(false);
+  // One shared slot for both toasts below — a prayer and a thank-you landing
+  // in the same poll tick is rare enough that letting the second reset the
+  // first's timer is a better tradeoff than two toasts visually overlapping
+  // at the same fixed position.
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flashPrayerToast = useCallback(() => {
-    setPrayerToastVisible(true);
+  const flashToast = useCallback((message: string) => {
+    setToastMessage(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setPrayerToastVisible(false), 4000);
+    toastTimer.current = setTimeout(() => setToastMessage(null), 4000);
   }, []);
+  const flashPrayerToast = useCallback(() => flashToast(strings.care.prayerToast), [flashToast]);
   useEffect(
     () => () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     },
     [],
   );
+
+  // Fires once when a friend thanks the viewer for a voice note/message they
+  // sent — the counterpart to the prayer toast above, for the other two
+  // touchpoint types.
+  const flashGratitudeToast = useCallback(
+    (name: string) => flashToast(strings.care.gratitudeReceived(name)),
+    [flashToast],
+  );
+  useNewGratitudeAlert(care.data, user?.id, flashGratitudeToast);
 
   const myEntry = useMemo(() => sper.data?.find((e) => e.user_id === user?.id) ?? null, [sper.data, user]);
   const myCheckinId = myEntry?.checkin_id ?? '';
@@ -103,13 +123,18 @@ export default function TodayPage() {
   });
 
   const pendingCareCards: CareCardDTO[] = [];
-  const caredForEntries: Array<{ card: CareCardDTO; actionTypes: TouchpointType[] }> = [];
+  const caredForEntries: Array<{ card: CareCardDTO; actionTypes: TouchpointType[]; actionAt: string | null }> = [];
   otherCareCards.forEach((card, i) => {
     const tpData = touchpointQueries[i]?.data;
     const reached = reachedNames(tpData, user?.id);
     if (reached.includes('You')) {
-      const myTypes = (tpData ?? []).filter((t) => t.responder_id === user?.id).map((t) => t.type);
-      caredForEntries.push({ card, actionTypes: myTypes });
+      const mine = (tpData ?? []).filter((t) => t.responder_id === user?.id);
+      const myTypes = mine.map((t) => t.type);
+      const myLatestAt = mine.reduce<string | null>(
+        (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
+        null,
+      );
+      caredForEntries.push({ card, actionTypes: myTypes, actionAt: myLatestAt });
     } else {
       pendingCareCards.push(card);
     }
@@ -126,7 +151,7 @@ export default function TodayPage() {
       ? fromShareCard(share.data.find((c) => c.target_user_id === user?.id)!)
       : null;
   const othersShare: ShareableNote[] = [
-    ...caredForEntries.map(({ card, actionTypes }) => fromCareCard(card, actionTypes)),
+    ...caredForEntries.map(({ card, actionTypes, actionAt }) => fromCareCard(card, actionTypes, actionAt)),
     ...(share.data ?? []).filter((c) => c.target_user_id !== user?.id).map(fromShareCard),
   ].filter((item) => hasShareableContent(item) || !!item.actionTypes?.length);
 
@@ -160,12 +185,51 @@ export default function TodayPage() {
 
   return (
     <div className="min-h-full bg-bg">
-      <Toast message={strings.care.prayerToast} visible={prayerToastVisible} />
+      <Toast message={toastMessage ?? ''} visible={!!toastMessage} />
 
       <div className="flex flex-col gap-lg p-lg">
-        <div className="mb-4">
+        <div className="relative mb-4">
           <h1 style={titleStyle}>{strings.sper.title}</h1>
-          {circleName ? <p style={circleNameStyle}>{circleName}</p> : null}
+          {circleName ? (
+            agreedCircles.length > 1 ? (
+              <button
+                onClick={() => setCircleMenuOpen((o) => !o)}
+                aria-expanded={circleMenuOpen}
+                className={`flex items-center gap-xs ${PRESSABLE}`}
+              >
+                <span style={circleNameStyle}>{circleName}</span>
+                <span style={circleChevronStyle}>{circleMenuOpen ? '▴' : '▾'}</span>
+              </button>
+            ) : (
+              <p style={circleNameStyle}>{circleName}</p>
+            )
+          ) : null}
+
+          {circleMenuOpen ? (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setCircleMenuOpen(false)} />
+              <div className="absolute left-0 top-full z-20 mt-xs flex flex-col gap-xs rounded-md border border-border bg-surface p-xs shadow-sm">
+                {agreedCircles.map((c) => {
+                  const active = c.circle_id === circleId;
+                  return (
+                    <button
+                      key={c.circle_id}
+                      onClick={() => {
+                        setActiveCircle(c.circle_id);
+                        setCircleMenuOpen(false);
+                      }}
+                      aria-pressed={active}
+                      className={`whitespace-nowrap rounded-sm px-sm py-xs text-left ${PRESSABLE} ${
+                        active ? 'bg-surfaceRaised' : ''
+                      }`}
+                    >
+                      <span style={active ? circleMenuItemActiveStyle : circleMenuItemStyle}>{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
         </div>
 
         {sper.data && sper.data.length > 0 ? (
@@ -194,7 +258,7 @@ export default function TodayPage() {
 
         {/* The viewer's own share — nothing to act on, just theirs to watch
             reactions land on, so it sits outside either tab below. */}
-        {myShare ? <ShareCard card={myShare} isSelf /> : null}
+        {myShare ? <ShareCard card={myShare} isSelf entry={myEntry} /> : null}
 
         {showNewSection || showRespondedSection ? (
           <div className="flex flex-col gap-md">
@@ -241,6 +305,7 @@ export default function TodayPage() {
                       key={item.checkin_id}
                       card={item}
                       isSelf={false}
+                      entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
                       onToggleLike={() => toggleLike.mutate(item.checkin_id)}
                       likePending={toggleLike.isPending}
                     />
@@ -274,6 +339,7 @@ export default function TodayPage() {
                     key={item.checkin_id}
                     card={item}
                     isSelf={false}
+                    entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
                     onToggleLike={() => toggleLike.mutate(item.checkin_id)}
                     likePending={toggleLike.isPending}
                   />
@@ -368,6 +434,7 @@ function CareCardWithLog({
       }
       onSendMessage={(body) => sendMessage.mutateAsync({ body }).then(() => undefined)}
       alreadyReached={alreadyReached}
+      touchpoints={touchpoints.data}
     />
   );
 }
@@ -395,9 +462,12 @@ function MemberDetailSheetWithLog({
   const toggleLike = useToggleLike(circleId);
   const touchpoints = useTouchpoints(checkinId);
   const alreadyReached = reachedNames(touchpoints.data, user?.id);
-  const actionTypes = (touchpoints.data ?? [])
-    .filter((t) => t.responder_id === user?.id)
-    .map((t) => t.type);
+  const myTouchpoints = (touchpoints.data ?? []).filter((t) => t.responder_id === user?.id);
+  const actionTypes = myTouchpoints.map((t) => t.type);
+  const actionAt = myTouchpoints.reduce<string | null>(
+    (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
+    null,
+  );
   useNewPrayerAlert(isSelf ? touchpoints.data : undefined, onPrayed);
   return (
     <MemberDetailSheet
@@ -406,7 +476,9 @@ function MemberDetailSheetWithLog({
       isSelf={isSelf}
       alreadyReached={alreadyReached}
       touchpointCount={touchpoints.data?.length ?? 0}
+      touchpoints={touchpoints.data}
       actionTypes={actionTypes}
+      actionAt={actionAt}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
       onToggleLike={() => toggleLike.mutate(checkinId)}
       likePending={toggleLike.isPending}

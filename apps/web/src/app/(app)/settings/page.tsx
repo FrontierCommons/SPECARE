@@ -8,7 +8,8 @@ import { Avatar } from '../../../components/Avatar';
 import { TutorialModal } from '../../../components/TutorialModal';
 import { ConfirmModal } from '../../../components/ConfirmModal';
 import { resizeImageToSquareDataUrl } from '../../../lib/resizeImage';
-import { enablePushNotifications, getPushStatus, type PushStatus } from '../../../lib/push';
+import { disablePushNotifications, enablePushNotifications, getPushStatus, type PushStatus } from '../../../lib/push';
+import { formatPromptTime, nextPromptAt } from '../../../lib/time';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 import { PRESSABLE } from '../../../design/interaction';
@@ -56,12 +57,17 @@ export default function SettingsPage() {
   const [pushStatus, setPushStatus] = useState<PushStatus | 'checking'>('checking');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState(false);
+  const [pushDisableError, setPushDisableError] = useState(false);
 
   useEffect(() => {
     void getPushStatus().then(setPushStatus);
   }, []);
 
   if (!user) return null;
+
+  const nextReminderLabel = formatPromptTime(
+    nextPromptAt(user.last_checkin_at ?? user.created_at, user.checkin_frequency),
+  );
 
   const enablePush = async () => {
     setPushBusy(true);
@@ -72,6 +78,19 @@ export default function SettingsPage() {
     } catch {
       setPushError(true);
       setPushStatus(await getPushStatus());
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const disablePush = async () => {
+    setPushBusy(true);
+    setPushDisableError(false);
+    try {
+      await disablePushNotifications();
+      setPushStatus(await getPushStatus());
+    } catch {
+      setPushDisableError(true);
     } finally {
       setPushBusy(false);
     }
@@ -203,9 +222,21 @@ export default function SettingsPage() {
                   : strings.settings.browserNotificationsBody}
               </p>
               {pushError ? <p style={errorTextStyle}>{strings.settings.browserNotificationsFailed}</p> : null}
+              {pushDisableError ? (
+                <p style={errorTextStyle}>{strings.settings.browserNotificationsDisableFailed}</p>
+              ) : null}
             </div>
             {pushStatus === 'subscribed' ? (
-              <span style={rowValueStyle}>{strings.settings.browserNotificationsEnabled}</span>
+              <div className="flex shrink-0 items-center gap-sm">
+                <span style={rowValueStyle}>{strings.settings.browserNotificationsEnabled}</span>
+                <button
+                  onClick={() => void disablePush()}
+                  disabled={pushBusy}
+                  className={`rounded-md border border-border px-md py-sm disabled:opacity-50 ${PRESSABLE}`}
+                >
+                  <span style={linkTextStyle}>{strings.settings.disableBrowserNotifications}</span>
+                </button>
+              </div>
             ) : pushStatus === 'checking' ? null : (
               <button
                 onClick={() => void enablePush()}
@@ -243,6 +274,9 @@ export default function SettingsPage() {
               );
             })}
           </div>
+          <p style={rowBodyStyle} className="mt-sm">
+            {strings.settings.nextReminder(nextReminderLabel)}
+          </p>
         </div>
 
         <button

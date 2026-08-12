@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { CareCardDTO, SperEntryDTO, TouchpointType } from '@sper/shared-types';
+import type { CareCardDTO, SperEntryDTO, TouchpointDTO, TouchpointType } from '@sper/shared-types';
 import { Avatar } from './Avatar';
 import { CareCard } from './CareCard';
 import { ShareCard } from './ShareCard';
@@ -23,9 +23,15 @@ interface Props {
   alreadyReached?: string[];
   /** Touchpoints of any kind, for the self-view tree's care count. */
   touchpointCount?: number;
+  /** Same touchpoints `touchpointCount` was derived from — feeds the Care
+   * Card's "already reached out" relative timestamp. */
+  touchpoints?: TouchpointDTO[];
   /** The viewer's own touchpoint type(s) already logged for this check-in —
    * drives the promoted ShareCard's "You [action] X!" title. */
   actionTypes?: TouchpointType[];
+  /** When the viewer's most recent action above was logged — shown as a
+   * small "X ago" under the promoted ShareCard's title. */
+  actionAt?: string | null;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
   onSendMessage: (body: string) => Promise<void>;
@@ -57,7 +63,9 @@ export function MemberDetailSheet({
   isSelf,
   alreadyReached,
   touchpointCount,
+  touchpoints,
   actionTypes,
+  actionAt,
   onLogCare,
   onSendVoiceNote,
   onSendMessage,
@@ -124,8 +132,9 @@ export function MemberDetailSheet({
           ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
             reached ? (
               <ShareCard
-                card={fromCareCard(careCard, actionTypes)}
+                card={fromCareCard(careCard, actionTypes, actionAt)}
                 isSelf={false}
+                entry={entry}
                 onToggleLike={onToggleLike}
                 likePending={likePending}
               />
@@ -137,6 +146,7 @@ export function MemberDetailSheet({
                 onSendVoiceNote={onSendVoiceNote}
                 onSendMessage={onSendMessage}
                 alreadyReached={alreadyReached}
+                touchpoints={touchpoints}
               />
             )
           ) : null}

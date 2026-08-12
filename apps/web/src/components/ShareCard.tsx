@@ -1,15 +1,17 @@
 'use client';
 
-import type { CheckInDimension } from '@sper/shared-types';
-import { color, type } from '../design/tokens';
+import type { CheckInDimension, SperEntryDTO } from '@sper/shared-types';
+import { color, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { parseCheckInNote } from '../lib/checkinNote';
-import { DIMENSIONS } from '../lib/checkinState';
+import { DIMENSIONS, dimState } from '../lib/checkinState';
+import { relativeTime } from '../lib/time';
 import type { ShareableNote } from '../lib/shareable';
 import { LikeButton } from './LikeButton';
 
-const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sage  };
-const noteStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight: 400 as const, color: color.textOption };
+const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.textPrimary};
+const dimTextStyle = { ...type.caption, fontWeight: 600 as const, color: color.textPrimary };
+const actionTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
 const likeCountStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 
 interface Props {
@@ -17,6 +19,10 @@ interface Props {
   /** The viewer is the one who shared this — no liking your own post, just
    * the count so they can see how it landed. */
   isSelf: boolean;
+  /** The shared member's own check-in entry — lets each noted dimension's
+   * pill be colored by what they actually answered, same as CareCard's
+   * flagged-dimension pills. */
+  entry?: SperEntryDTO | null;
   onToggleLike?: () => void;
   likePending?: boolean;
 }
@@ -27,7 +33,7 @@ interface Props {
  * a viewer has already cared for. Nothing to act on here, just something to
  * notice and like.
  */
-export function ShareCard({ card, isSelf, onToggleLike, likePending }: Props) {
+export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Props) {
   // Only the Thriving/Steady per-dimension answers ever show here — never
   // the flagged (Heavy/In the Pit) dimension's own note, and never the
   // untagged general note either, since that's free text that could be
@@ -56,6 +62,7 @@ export function ShareCard({ card, isSelf, onToggleLike, likePending }: Props) {
         style={{ backgroundColor: color.bg, borderColor: color.sage }}
       >
         <p style={titleStyle}>{title}</p>
+        {card.actionAt ? <p style={actionTimeStyle}>{relativeTime(card.actionAt)}</p> : null}
       </div>
     );
   }
@@ -63,17 +70,27 @@ export function ShareCard({ card, isSelf, onToggleLike, likePending }: Props) {
   const title = isSelf ? strings.care.youShared : strings.care.wantsToShare(card.target_name);
 
   return (
-    <div
-      className="flex flex-col gap-md rounded-lg border p-lg shadow-sm"
-      style={{ backgroundColor: color.bg, borderColor: color.sage }}
-    >
+    <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-sm">
       <p style={titleStyle}>{title}</p>
 
-      {notedDimensions.map((dim) => (
-        <p key={dim} style={noteStyle}>
-          {strings.checkIn.dimensions[dim as CheckInDimension]}: {perDimension[dim]}
-        </p>
-      ))}
+      {notedDimensions.map((dim) => {
+        // Filled with the state's own color, same treatment as CareCard's
+        // flagged-dimension pills — the pill should read as what was
+        // actually answered, not a fixed color regardless of the answer.
+        const level = entry ? dimState(entry, dim) : null;
+        const stateColor = level ? stateVisual[level].color : null;
+        return (
+          <span
+            key={dim}
+            className="w-fit self-start rounded-pill border px-md py-xs"
+            style={{ backgroundColor: stateColor ?? color.surfaceRaised, borderColor: stateColor ?? color.amber }}
+          >
+            <span style={{ ...dimTextStyle, color: stateColor ? color.textPrimary : color.amber }}>
+              {strings.checkIn.dimensions[dim as CheckInDimension]}: {perDimension[dim]}
+            </span>
+          </span>
+        );
+      })}
 
       {isSelf ? (
         <span className="flex w-fit items-center gap-xs">
