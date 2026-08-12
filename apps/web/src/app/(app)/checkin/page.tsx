@@ -20,6 +20,7 @@ import { relativeTime } from '../../../lib/time';
 import { enqueueCheckIn } from '../../../lib/offlineQueue';
 import { color, stateVisual, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
+import { PRESSABLE } from '../../../design/interaction';
 
 type Selections = Partial<Record<CheckInDimension, StateLevel>>;
 type Explanations = Partial<Record<CheckInDimension, string>>;
@@ -171,7 +172,7 @@ export default function CheckInPage() {
     <div className="flex min-h-full flex-col gap-md bg-bg p-lg">
       <div className="flex items-center justify-between">
         <h1 style={titleStyle}>{strings.checkIn.title}</h1>
-        <button onClick={cancel} aria-label={strings.common.cancel} className="p-xs">
+        <button onClick={cancel} aria-label={strings.common.cancel} className={`p-xs ${PRESSABLE}`}>
           <span style={closeGlyphStyle}>✕</span>
         </button>
       </div>
@@ -203,7 +204,7 @@ export default function CheckInPage() {
                       key={level}
                       onClick={() => answer(DIMENSIONS[step]!, level)}
                       aria-label={opt.label}
-                      className="flex items-center gap-sm rounded-md px-md py-sm"
+                      className={`flex items-center gap-sm rounded-md px-md py-sm ${PRESSABLE}`}
                       style={{ backgroundColor: stateVisual[level].color }}
                     >
                       <span style={{ fontSize: 20 }}>{opt.icon}</span>
@@ -216,7 +217,7 @@ export default function CheckInPage() {
                 <button
                   onClick={beginExplain}
                   aria-label={strings.checkIn.explainOption.label}
-                  className="flex items-center gap-sm rounded-md border border-border px-md py-sm"
+                  className={`flex items-center gap-sm rounded-md border border-border px-md py-sm ${PRESSABLE}`}
                   style={{ backgroundColor: color.surfaceRaised }}
                 >
                   <span style={{ fontSize: 20 }}>{strings.checkIn.explainOption.icon}</span>
@@ -247,7 +248,7 @@ export default function CheckInPage() {
                         onClick={() => setExplainLevel(level)}
                         aria-pressed={selected}
                         aria-label={opt.label}
-                        className="flex items-center gap-sm rounded-md px-md py-sm transition-opacity"
+                        className={`flex items-center gap-sm rounded-md px-md py-sm transition-opacity ${PRESSABLE}`}
                         style={{
                           backgroundColor: stateVisual[level].color,
                           opacity: selected ? 1 : 0.5,
@@ -265,14 +266,14 @@ export default function CheckInPage() {
                 <div className="flex gap-sm">
                   <button
                     onClick={cancelExplain}
-                    className="flex-1 rounded-md border border-border py-sm text-center"
+                    className={`flex-1 rounded-md border border-border py-sm text-center ${PRESSABLE}`}
                   >
                     <span style={composerSkipStyle}>{strings.checkIn.explainCancel}</span>
                   </button>
                   <button
                     onClick={sendExplain}
                     disabled={!explainText.trim() || !explainLevel}
-                    className="flex-1 rounded-md bg-sage py-sm text-center disabled:opacity-50"
+                    className={`flex-1 rounded-md bg-sage py-sm text-center disabled:opacity-50 ${PRESSABLE}`}
                   >
                     <span style={composerSendTextStyle}>{strings.checkIn.send}</span>
                   </button>
@@ -305,7 +306,7 @@ export default function CheckInPage() {
             <button
               onClick={() => void finish(note)}
               disabled={submit.isPending}
-              className="rounded-pill bg-sage px-md py-sm"
+              className={`rounded-pill bg-sage px-md py-sm ${PRESSABLE}`}
             >
               <span style={composerSendTextStyle}>{strings.checkIn.send}</span>
             </button>
@@ -315,7 +316,7 @@ export default function CheckInPage() {
                 setNote('');
                 void finish('');
               }}
-              className="px-md py-sm"
+              className={`px-md py-sm ${PRESSABLE}`}
             >
               <span style={composerSkipStyle}>{strings.checkIn.skip}</span>
             </button>
@@ -324,7 +325,10 @@ export default function CheckInPage() {
       ) : null}
 
       {step === DONE_STEP ? (
-        <button onClick={() => router.push('/today')} className="rounded-md bg-sage p-md text-center shadow-sm">
+        <button
+          onClick={() => router.push('/today')}
+          className={`rounded-md bg-sage p-md text-center shadow-sm ${PRESSABLE}`}
+        >
           <span style={primaryTextStyle}>{strings.checkIn.done}</span>
         </button>
       ) : null}
@@ -366,11 +370,11 @@ function ResultView({
 
         {entry.created_at ? <NextCheckInCountdown lastCheckInAt={entry.created_at} frequency={frequency} /> : null}
 
-        <button onClick={onUpdate} className="rounded-md bg-sage p-md text-center shadow-sm">
+        <button onClick={onUpdate} className={`rounded-md bg-sage p-md text-center shadow-sm ${PRESSABLE}`}>
           <span style={primaryTextStyle}>{strings.checkIn.update}</span>
         </button>
 
-        <button onClick={onOpenSettings} className="py-sm text-center">
+        <button onClick={onOpenSettings} className={`py-sm text-center ${PRESSABLE}`}>
           <span style={linkStyle}>{strings.checkIn.changeFrequency}</span>
         </button>
       </div>

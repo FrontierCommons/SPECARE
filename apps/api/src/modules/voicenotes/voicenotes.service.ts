@@ -1,6 +1,7 @@
 import { db, type DB } from '../../config/db';
 import { VoiceNoteRepo, voiceNoteRepo } from './voicenotes.repo';
 import { touchpointRepo } from '../touchpoints/touchpoints.repo';
+import { gratitudeRepo } from '../gratitude/gratitude.repo';
 import { toVoiceNoteDTO } from '../../shared/mappers';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../shared/errors';
 import type { VoiceNoteDTO } from '@sper/shared-types';
@@ -91,7 +92,7 @@ export class VoiceNoteService {
     return toVoiceNoteDTO(result.inserted, input.senderName);
   }
 
-  /** Pending notes for a check-in — visible only to that check-in's author. */
+  /** Every voice note for a check-in — visible only to that check-in's author. */
   async list(checkinId: string, callerId: string): Promise<VoiceNoteDTO[]> {
     const ctx = await this.repo.checkinContext(this.database, checkinId);
     if (!ctx) throw new NotFoundError('Check-in not found');
@@ -99,11 +100,16 @@ export class VoiceNoteService {
       throw new ForbiddenError('Only the check-in author can view their voice notes');
     }
 
-    const rows = await this.repo.listPending(this.database, checkinId);
+    const rows = await this.repo.listAll(this.database, checkinId);
     return rows.map((r) => toVoiceNoteDTO(r, r.senderName));
   }
 
-  /** The author acknowledges a note — it disappears from future list() calls. */
+  /**
+   * The author acknowledges a note — it moves out of their New tab, and the
+   * sender is thanked for this check-in same as the bulk "Thank you!" flow
+   * would: their next Care Cards fetch surfaces a one-time "wants to show
+   * gratitude" card before that check-in retires from their active list.
+   */
   async markReceived(checkinId: string, noteId: string, callerId: string): Promise<void> {
     const ctx = await this.repo.checkinContext(this.database, checkinId);
     if (!ctx) throw new NotFoundError('Check-in not found');
@@ -114,7 +120,10 @@ export class VoiceNoteService {
     const note = await this.repo.findById(this.database, noteId);
     if (!note || note.checkinId !== checkinId) throw new NotFoundError('Voice note not found');
 
-    await this.repo.markReceived(this.database, noteId);
+    await this.database.transaction(async (tx) => {
+      await this.repo.markReceived(tx, noteId);
+      await gratitudeRepo.insertMany(tx, checkinId, [note.senderId]);
+    });
   }
 }
 

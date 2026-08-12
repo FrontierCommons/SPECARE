@@ -7,6 +7,7 @@ import { useSession } from '../../../state/session';
 import { timezoneOptions, labelWithOffset } from '../../../lib/timezones';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
+import { PRESSABLE } from '../../../design/interaction';
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
@@ -65,11 +66,11 @@ export default function TimezonePage() {
         <p style={bodyStyle}>{strings.onboarding.timezoneBody}</p>
         <button
           onClick={() => router.push('/onboarding/join')}
-          className="mt-md rounded-md bg-sage p-md text-center"
+          className={`mt-md rounded-md bg-sage p-md text-center ${PRESSABLE}`}
         >
           <span style={primaryTextStyle}>{strings.onboarding.looksRight}</span>
         </button>
-        <button onClick={() => setConfirmedTz(null)} className="py-sm text-center">
+        <button onClick={() => setConfirmedTz(null)} className={`py-sm text-center ${PRESSABLE}`}>
           <span style={linkStyle}>{strings.onboarding.changeTimezone}</span>
         </button>
       </div>
@@ -94,7 +95,11 @@ export default function TimezonePage() {
         ))}
       </select>
 
-      <button onClick={confirm} disabled={busy} className="mt-md rounded-md bg-sage p-md text-center">
+      <button
+        onClick={confirm}
+        disabled={busy}
+        className={`mt-md rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
+      >
         <span style={primaryTextStyle}>{strings.onboarding.confirmTimezone}</span>
       </button>
     </div>

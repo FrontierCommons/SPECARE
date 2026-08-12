@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 interface Props {
   open: boolean;
@@ -85,13 +86,16 @@ export function ConfirmModal({
         ) : null}
 
         <div className="mt-sm flex gap-sm">
-          <button onClick={onCancel} className="flex-1 rounded-md border border-border py-sm text-center">
+          <button
+            onClick={onCancel}
+            className={`flex-1 rounded-md border border-border py-sm text-center ${PRESSABLE}`}
+          >
             <span style={cancelTextStyle}>{cancelLabel ?? strings.common.cancel}</span>
           </button>
           <button
             onClick={onConfirm}
             disabled={locked || pending}
-            className="flex-1 rounded-md py-sm text-center disabled:opacity-40"
+            className={`flex-1 rounded-md py-sm text-center disabled:opacity-40 ${PRESSABLE}`}
             style={{ backgroundColor: danger ? color.destructive : color.sage }}
           >
             <span style={confirmTextStyle}>{confirmLabel}</span>

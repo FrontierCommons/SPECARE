@@ -3,6 +3,7 @@ import { Avatar } from './Avatar';
 import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { relativeTime } from '../lib/time';
 import { color, stateVisual, type } from '../design/tokens';
+import { PRESSABLE } from '../design/interaction';
 
 const SIZE = 96; // overall ring diameter
 const STROKE = 10; // bold — this is the whole point
@@ -39,7 +40,7 @@ export function MemberOrb({
     <button
       onClick={() => onPress(entry)}
       aria-label={`${displayName}: ${label}`}
-      className="flex flex-col items-center gap-xs"
+      className={`flex flex-col items-center gap-xs ${PRESSABLE}`}
       style={{ width: SIZE }}
     >
       <div className="relative flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>

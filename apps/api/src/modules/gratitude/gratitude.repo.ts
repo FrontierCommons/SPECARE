@@ -34,11 +34,15 @@ export class GratitudeRepo {
     return rows.map((r) => r.responderId);
   }
 
+  /** Idempotent per (checkin, responder) — a repeat thanks for someone
+   * already thanked (via the bulk "Thank you!" or a per-message/voice-note
+   * one) is a silent no-op rather than a unique-constraint error. */
   async insertMany(exec: Executor, checkinId: string, responderIds: string[]): Promise<void> {
     if (responderIds.length === 0) return;
     await exec
       .insert(careGratitudes)
-      .values(responderIds.map((responderId) => ({ checkinId, responderId })));
+      .values(responderIds.map((responderId) => ({ checkinId, responderId })))
+      .onConflictDoNothing();
   }
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { VoiceNoteDTO } from '@sper/shared-types';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 interface Props {
   note: VoiceNoteDTO;
@@ -11,13 +12,16 @@ interface Props {
   receiving?: boolean;
 }
 
-const titleStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
-const receivedTextStyle = { ...type.label, color: color.textPrimary };
+const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sage };
+const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloom };
 
 /**
  * Web port of apps/mobile/src/components/VoiceNoteBanner.tsx. The audio
  * arrives inline as base64 (see VoiceNoteDTO) — a data: URL is enough for
- * playback here, no cache-file dance like the native side needs.
+ * playback here, no cache-file dance like the native side needs. Same card
+ * shell as ShareCard ("the post") and the same thank-you pill button as
+ * MessageBanner, so both "something arrived for you" cases look like one
+ * family.
  */
 export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,7 +52,7 @@ export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
   return (
     <div
       className="flex flex-col gap-md rounded-lg border p-lg shadow-sm"
-      style={{ backgroundColor: color.bloomSoft, borderColor: color.bloom }}
+      style={{ backgroundColor: color.bg, borderColor: color.sage }}
     >
       <audio
         ref={audioRef}
@@ -58,14 +62,12 @@ export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
         onEnded={() => setPlaying(false)}
         className="hidden"
       />
-      <p style={titleStyle} className="text-center">
-        {strings.care.voiceNoteFrom(note.sender_name)}
-      </p>
-      <div className="flex justify-center gap-md">
+      <p style={titleStyle}>{strings.care.voiceNoteFrom(note.sender_name)}</p>
+      <div className="flex items-center gap-md">
         <button
           onClick={toggle}
           aria-label={playing ? strings.care.voiceNotePause : strings.care.voiceNotePlay}
-          className="flex h-12 w-12 items-center justify-center rounded-full"
+          className={`flex h-12 w-12 items-center justify-center rounded-full ${PRESSABLE}`}
           style={{ backgroundColor: color.sage }}
         >
           <span style={{ color: color.bg, fontWeight: 700 }}>{playing ? '❙❙' : '▶'}</span>
@@ -73,10 +75,12 @@ export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
         <button
           onClick={() => onReceived(note.id)}
           disabled={receiving}
-          aria-label={strings.care.voiceNoteReceived}
-          className="flex items-center rounded-md border border-border px-lg"
+          aria-label={strings.care.thankYou}
+          className={`flex w-fit items-center gap-xs rounded-pill border px-md py-xs disabled:opacity-60 ${PRESSABLE}`}
+          style={{ borderColor: color.bloom, backgroundColor: color.bloomSoft }}
         >
-          <span style={receivedTextStyle}>{strings.care.voiceNoteReceived}</span>
+          <span style={{ fontSize: 16 }}>💌</span>
+          <span style={thankYouTextStyle}>{strings.care.thankYou}</span>
         </button>
       </div>
     </div>

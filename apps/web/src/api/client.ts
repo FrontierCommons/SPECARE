@@ -21,6 +21,8 @@ import type {
   UserDTO,
   VoiceNoteDTO,
   SendVoiceNoteRequest,
+  InAppMessageDTO,
+  SendMessageRequest,
 } from '@sper/shared-types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
@@ -210,6 +212,20 @@ export const api = {
     ),
   markVoiceNoteReceived: (checkinId: string, noteId: string) =>
     raw<{ ok: boolean }>(`/checkins/${checkinId}/voice-notes/${noteId}/received`, {
+      method: 'POST',
+    }),
+
+  // In-app messages — the in-app replacement for the old off-app "Send a
+  // message" deep link.
+  sendMessage: (checkinId: string, body: SendMessageRequest) =>
+    raw<{ message: InAppMessageDTO }>(`/checkins/${checkinId}/messages`, {
+      method: 'POST',
+      body,
+    }).then((r) => r.message),
+  messages: (checkinId: string) =>
+    raw<{ messages: InAppMessageDTO[] }>(`/checkins/${checkinId}/messages`).then((r) => r.messages),
+  markMessageReceived: (checkinId: string, messageId: string) =>
+    raw<{ ok: boolean }>(`/checkins/${checkinId}/messages/${messageId}/received`, {
       method: 'POST',
     }),
 

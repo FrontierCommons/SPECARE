@@ -9,6 +9,7 @@ import type { NotificationDispatcher } from '../modules/notifications/circle-not
 import type { TouchpointAckDispatcher } from '../modules/touchpoints/touchpoints.service';
 import type { CircleEventDispatcher } from '../modules/circles/circle-events';
 import type { VoiceNoteDispatcher } from '../modules/voicenotes/voicenotes.service';
+import type { MessageDispatcher } from '../modules/messages/messages.service';
 import type { CircleNotificationRow, DeviceTokenRow } from '../db/schema';
 
 interface RecipientContact {
@@ -34,7 +35,8 @@ export class NotifierService
     NotificationDispatcher,
     TouchpointAckDispatcher,
     CircleEventDispatcher,
-    VoiceNoteDispatcher
+    VoiceNoteDispatcher,
+    MessageDispatcher
 {
   constructor(
     private readonly devices: DeviceRepo = deviceRepo,
@@ -156,6 +158,20 @@ export class NotifierService
     const data = { type: 'voice_note', checkin_id: input.checkinId };
 
     // One recording, one recipient, one push — no idempotency claim needed.
+    await this.sendToContact(contact, title, body, data);
+  }
+
+  /* ----------------------------- Messages ------------------------------ */
+
+  async notifyMessage(input: { targetUserId: string; senderName: string; checkinId: string }): Promise<void> {
+    const [contact] = await this.loadContacts([input.targetUserId]);
+    if (!contact) return;
+
+    const title = `${input.senderName} sent you a message`;
+    const body = 'Tap to read it.';
+    const data = { type: 'in_app_message', checkin_id: input.checkinId };
+
+    // One message, one recipient, one push — no idempotency claim needed.
     await this.sendToContact(contact, title, body, data);
   }
 

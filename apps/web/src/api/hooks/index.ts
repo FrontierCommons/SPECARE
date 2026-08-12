@@ -6,6 +6,7 @@ import type {
   SubmitCheckInRequest,
   UpdateProfileRequest,
   SendVoiceNoteRequest,
+  SendMessageRequest,
 } from '@sper/shared-types';
 
 export const keys = {
@@ -15,6 +16,7 @@ export const keys = {
   members: (circleId: string) => ['members', circleId] as const,
   touchpoints: (checkinId: string) => ['touchpoints', checkinId] as const,
   voiceNotes: (checkinId: string) => ['voiceNotes', checkinId] as const,
+  messages: (checkinId: string) => ['messages', checkinId] as const,
   me: ['me'] as const,
 };
 
@@ -90,9 +92,11 @@ export function useTouchpoints(checkinId: string) {
   });
 }
 
-/** Pending (not yet acknowledged) voice notes waiting on this check-in's
- * author. Only ever returns data for the caller's own check-in — polled like
- * touchpoints so a new recording shows up without the viewer doing anything. */
+/** Every voice note waiting on this check-in's author — pending and
+ * already-thanked alike; the caller buckets by `received_at` (New vs
+ * Already responded). Only ever returns data for the caller's own check-in —
+ * polled like touchpoints so a new recording shows up without the viewer
+ * doing anything. */
 export function useVoiceNotes(checkinId: string) {
   return useQuery({
     queryKey: keys.voiceNotes(checkinId),
@@ -119,6 +123,38 @@ export function useMarkVoiceNoteReceived(checkinId: string) {
     mutationFn: (noteId: string) => api.markVoiceNoteReceived(checkinId, noteId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.voiceNotes(checkinId) });
+    },
+  });
+}
+
+/** Every in-app message waiting on this check-in's author — same
+ * pending/already-thanked split as voice notes above. */
+export function useMessages(checkinId: string) {
+  return useQuery({
+    queryKey: keys.messages(checkinId),
+    queryFn: () => api.messages(checkinId),
+    enabled: !!checkinId,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useSendMessage(circleId: string, checkinId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SendMessageRequest) => api.sendMessage(checkinId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.touchpoints(checkinId) });
+      qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
+    },
+  });
+}
+
+export function useMarkMessageReceived(checkinId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => api.markMessageReceived(checkinId, messageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.messages(checkinId) });
     },
   });
 }

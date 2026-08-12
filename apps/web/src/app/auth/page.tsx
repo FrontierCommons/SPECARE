@@ -5,7 +5,7 @@ import { api, ApiError } from '../../api/client';
 import { useSession } from '../../state/session';
 import { color, type } from '../../design/tokens';
 import { strings } from '../../design/strings';
-import { styleText } from 'util';
+import { PRESSABLE } from '../../design/interaction';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
@@ -187,13 +187,21 @@ export default function AuthPage() {
 
               {error ? <p style={errorStyle}>{error}</p> : null}
 
-              <button type="submit" disabled={busy} className="mt-sm rounded-md bg-sage p-md text-center">
+              <button
+                type="submit"
+                disabled={busy}
+                className={`mt-sm rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
+              >
                 <span style={primaryTextStyle}>
                   {resetSent ? strings.auth.resetPasswordCta : strings.auth.sendResetCode}
                 </span>
               </button>
 
-              <button type="button" onClick={() => setMode('signin')} className="py-sm text-center">
+              <button
+                type="button"
+                onClick={() => setMode('signin')}
+                className={`py-sm text-center ${PRESSABLE}`}
+              >
                 <span style={linkStyle}>{strings.auth.backToSignIn}</span>
               </button>
             </>
@@ -228,7 +236,7 @@ export default function AuthPage() {
               />
 
               {mode === 'signin' ? (
-                <button type="button" onClick={enterReset} className="text-right">
+                <button type="button" onClick={enterReset} className={`text-right ${PRESSABLE}`}>
                   <span style={linkSubtleStyle}>{strings.auth.forgotPassword}</span>
                 </button>
               ) : null}
@@ -236,18 +244,22 @@ export default function AuthPage() {
               {error ? <p style={errorStyle}>{error}</p> : null}
               {magicSent ? <p style={infoStyle}>Check your email for a sign-in link.</p> : null}
 
-              <button type="submit" disabled={busy} className="mt-sm rounded-md bg-sage p-md text-center">
+              <button
+                type="submit"
+                disabled={busy}
+                className={`mt-sm rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
+              >
                 <span style={primaryTextStyle}>{mode === 'signup' ? strings.auth.signUp : strings.auth.signIn}</span>
               </button>
 
-              <button type="button" onClick={magic} className="py-sm text-center">
+              <button type="button" onClick={magic} className={`py-sm text-center ${PRESSABLE}`}>
                 <span style={linkStyle}>{strings.auth.magicLink}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
-                className="py-sm text-center"
+                className={`py-sm text-center ${PRESSABLE}`}
               >
                 <span style={linkStyle}>
                   {mode === 'signup' ? strings.auth.toggleToSignIn : strings.auth.toggleToSignUp}

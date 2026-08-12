@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 export const VOICE_NOTE_MAX_DURATION_MS = 30_000;
 
@@ -47,6 +48,8 @@ function blobToBase64(blob: Blob): Promise<string> {
  * picks (webm/opus on Chrome & Firefox, mp4/aac on Safari) and sends the
  * real detected mime type; native apps' decoders may not support webm/opus,
  * same class of format risk the mobile fix addressed for Android vs iOS.
+ * A small centered dialog (matching ConfirmModal/MessageComposerSheet), not a
+ * full-width bottom sheet.
  */
 export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -153,21 +156,20 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const timeLabel = `0:${String(seconds).padStart(2, '0')} / 0:${VOICE_NOTE_MAX_DURATION_MS / 1000}`;
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-lg">
       <button
         aria-label={strings.care.recordCancel}
         onClick={phase === 'idle' ? onClose : undefined}
         className="absolute inset-0 bg-[rgba(10,12,14,0.6)]"
       />
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-md rounded-t-lg border border-border bg-bg p-lg shadow-lg">
-        <div className="h-1 w-10 rounded-full bg-border" />
+      <div className="relative flex w-full max-w-sm flex-col items-center gap-md rounded-lg border border-border bg-bg p-lg shadow-lg">
         <p style={titleStyle}>{strings.care.sendVoiceNote}</p>
 
         {phase === 'idle' ? (
           <button
             onClick={start}
             aria-label={strings.care.recordTapToStart}
-            className="flex flex-col items-center gap-sm"
+            className={`flex flex-col items-center gap-sm ${PRESSABLE}`}
           >
             <span
               className="flex items-center justify-center rounded-full"
@@ -185,7 +187,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
             <button
               onClick={stop}
               aria-label={strings.care.recordStop}
-              className="flex items-center justify-center rounded-full"
+              className={`flex items-center justify-center rounded-full ${PRESSABLE}`}
               style={{ width: 72, height: 72, backgroundColor: color.stateHeavy }}
             >
               <span className="block rounded" style={{ width: 22, height: 22, backgroundColor: color.bg }} />
@@ -201,14 +203,14 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
               <button
                 onClick={discard}
                 aria-label={strings.care.recordRerecord}
-                className="rounded-md border border-border px-lg py-md"
+                className={`rounded-md border border-border px-lg py-md ${PRESSABLE}`}
               >
                 <span style={actionTextStyle}>{strings.care.recordRerecord}</span>
               </button>
               <button
                 onClick={send}
                 aria-label={strings.care.recordSend}
-                className="rounded-md border border-sage bg-sage px-lg py-md"
+                className={`rounded-md border border-sage bg-sage px-lg py-md ${PRESSABLE}`}
               >
                 <span style={actionTextPrimaryStyle}>{strings.care.recordSend}</span>
               </button>
@@ -220,7 +222,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
 
         {error ? <p style={errorStyle}>{error}</p> : null}
 
-        <button onClick={onClose} className="mt-xs">
+        <button onClick={onClose} className={`mt-xs ${PRESSABLE}`}>
           <span style={cancelStyle}>{strings.care.recordCancel}</span>
         </button>
       </div>

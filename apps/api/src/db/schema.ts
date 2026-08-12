@@ -260,6 +260,30 @@ export const voiceNotes = pgTable(
   }),
 );
 
+/* --------------------------- In-app messages ---------------------------- */
+// The in-app replacement for the old off-app "Send a message" deep link —
+// structurally a sibling of voice_notes (same lifecycle, same
+// received_at-gates-"disappears" convention), just text instead of audio.
+
+export const checkinMessages = pgTable(
+  'checkin_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    checkinId: uuid('checkin_id')
+      .notNull()
+      .references(() => checkins.id, { onDelete: 'cascade' }),
+    senderId: uuid('sender_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    body: varchar('body', { length: 300 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    receivedAt: timestamp('received_at', { withTimezone: true }),
+  },
+  (t) => ({
+    byCheckin: index('idx_checkin_messages_checkin').on(t.checkinId),
+  }),
+);
+
 /* --------------------------- Care gap alerts --------------------------- */
 // One row per checkin that ever triggered a care-gap nudge — the unique
 // index on checkin_id is what makes the worker loop idempotent, so a
@@ -315,5 +339,6 @@ export type TouchpointLogRow = typeof touchpointLogs.$inferSelect;
 export type CareGratitudeRow = typeof careGratitudes.$inferSelect;
 export type CareGapAlertRow = typeof careGapAlerts.$inferSelect;
 export type VoiceNoteRow = typeof voiceNotes.$inferSelect;
+export type CheckinMessageRow = typeof checkinMessages.$inferSelect;
 export type DeviceTokenRow = typeof deviceTokens.$inferSelect;
 export type CheckInLikeRow = typeof checkinLikes.$inferSelect;

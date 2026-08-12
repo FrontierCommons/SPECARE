@@ -1,5 +1,6 @@
 import type { StateLevel } from '@sper/shared-types';
 import { color, stateVisual, type } from '../design/tokens';
+import { PRESSABLE } from '../design/interaction';
 
 interface Props {
   state: StateLevel;
@@ -33,7 +34,7 @@ export function StateBadge({ state, selected, onPress, compact }: Props) {
 
   if (!onPress) return body;
   return (
-    <button onClick={onPress} aria-pressed={!!selected} aria-label={v.label}>
+    <button onClick={onPress} aria-pressed={!!selected} aria-label={v.label} className={PRESSABLE}>
       {body}
     </button>
   );

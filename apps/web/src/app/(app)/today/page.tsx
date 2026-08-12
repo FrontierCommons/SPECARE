@@ -15,6 +15,9 @@ import {
   useVoiceNotes,
   useSendVoiceNote,
   useMarkVoiceNoteReceived,
+  useMessages,
+  useSendMessage,
+  useMarkMessageReceived,
 } from '../../../api/hooks';
 import { api } from '../../../api/client';
 import { useSession } from '../../../state/session';
@@ -25,10 +28,12 @@ import { SelfCareTree } from '../../../components/SelfCareTree';
 import { MemberDetailSheet } from '../../../components/MemberDetailSheet';
 import { NextCheckInCountdown } from '../../../components/NextCheckInCountdown';
 import { VoiceNoteBanner } from '../../../components/VoiceNoteBanner';
+import { MessageBanner } from '../../../components/MessageBanner';
 import { Toast } from '../../../components/Toast';
 import { useNewPrayerAlert } from '../../../lib/useNewPrayerAlert';
 import { reachedNames } from '../../../lib/touchpoints';
 import { fromCareCard, fromShareCard, hasShareableContent, type ShareableNote } from '../../../lib/shareable';
+import { PRESSABLE } from '../../../design/interaction';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
@@ -38,6 +43,7 @@ const emptyStyle = { ...type.body, color: color.textSecondary, fontWeight: "ital
 const ctaTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const tabTextStyle = { ...type.caption, color: color.textPrimary };
 const tabTextActiveStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
+const thankedTextStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 
 export default function TodayPage() {
   const router = useRouter();
@@ -66,6 +72,7 @@ export default function TodayPage() {
   );
 
   const myEntry = useMemo(() => sper.data?.find((e) => e.user_id === user?.id) ?? null, [sper.data, user]);
+  const myCheckinId = myEntry?.checkin_id ?? '';
 
   const selectedCard = useMemo(
     () => care.data?.find((c) => c.target_user_id === selected?.user_id),
@@ -96,34 +103,60 @@ export default function TodayPage() {
   });
 
   const pendingCareCards: CareCardDTO[] = [];
-  const caredForCareCards: CareCardDTO[] = [];
+  const caredForEntries: Array<{ card: CareCardDTO; actionTypes: TouchpointType[] }> = [];
   otherCareCards.forEach((card, i) => {
-    const reached = reachedNames(touchpointQueries[i]?.data, user?.id);
-    (reached.includes('You') ? caredForCareCards : pendingCareCards).push(card);
+    const tpData = touchpointQueries[i]?.data;
+    const reached = reachedNames(tpData, user?.id);
+    if (reached.includes('You')) {
+      const myTypes = (tpData ?? []).filter((t) => t.responder_id === user?.id).map((t) => t.type);
+      caredForEntries.push({ card, actionTypes: myTypes });
+    } else {
+      pendingCareCards.push(card);
+    }
   });
 
   // What the viewer sees as "something special": their own share (whichever
   // kind their latest check-in produced), then everyone else's — either a
   // genuinely all-positive check-in, or the leftover notes on one they've
-  // already cared for.
+  // already cared for (which always shows, even with nothing positive left,
+  // since the action confirmation itself is the content there).
   const myShare: ShareableNote | null = myCareCard
     ? fromCareCard(myCareCard)
     : share.data?.find((c) => c.target_user_id === user?.id)
       ? fromShareCard(share.data.find((c) => c.target_user_id === user?.id)!)
       : null;
   const othersShare: ShareableNote[] = [
-    ...caredForCareCards.map(fromCareCard),
+    ...caredForEntries.map(({ card, actionTypes }) => fromCareCard(card, actionTypes)),
     ...(share.data ?? []).filter((c) => c.target_user_id !== user?.id).map(fromShareCard),
-  ].filter(hasShareableContent);
+  ].filter((item) => hasShareableContent(item) || !!item.actionTypes?.length);
+
+  // The viewer's own pending/thanked voice notes and messages — these used
+  // to sit in a fixed spot above the tree; now they're part of the same
+  // New/Already-responded split as everything else.
+  const myVoiceNotes = useVoiceNotes(myCheckinId);
+  const myMessages = useMessages(myCheckinId);
+  const markVoiceReceived = useMarkVoiceNoteReceived(myCheckinId);
+  const markMessageReceived = useMarkMessageReceived(myCheckinId);
+  const pendingVoiceNotes = (myVoiceNotes.data ?? []).filter((n) => !n.received_at);
+  const respondedVoiceNotes = (myVoiceNotes.data ?? []).filter((n) => !!n.received_at);
+  const pendingMessages = (myMessages.data ?? []).filter((m) => !m.received_at);
+  const respondedMessages = (myMessages.data ?? []).filter((m) => !!m.received_at);
 
   // "New" groups everything that still wants something from the viewer —
-  // an action on a Care Card, or just a first reaction to a share they
-  // haven't liked yet. "Already responded" is the once-liked shares, kept
-  // around instead of vanishing so the viewer can see they followed through.
-  const newShares = othersShare.filter((item) => !item.liked_by_me);
-  const respondedShares = othersShare.filter((item) => item.liked_by_me);
-  const showNewSection = pendingCareCards.length > 0 || newShares.length > 0;
-  const showRespondedSection = respondedShares.length > 0;
+  // an action on a Care Card, a first reaction to a share they haven't
+  // liked yet, or a voice note/message waiting on a "Thank you." "Already
+  // responded" is what they've already followed through on, kept around
+  // instead of vanishing so they can see it landed. A promoted action card
+  // (the viewer already prayed/called/sent something) belongs in "Already
+  // responded" the moment it's sent, regardless of like status — liking is
+  // for reacting to someone else's share, not a precondition for the
+  // viewer's own action to count as done.
+  const newShares = othersShare.filter((item) => !item.actionTypes?.length && !item.liked_by_me);
+  const respondedShares = othersShare.filter((item) => !!item.actionTypes?.length || item.liked_by_me);
+  const showNewSection =
+    pendingCareCards.length > 0 || newShares.length > 0 || pendingVoiceNotes.length > 0 || pendingMessages.length > 0;
+  const showRespondedSection =
+    respondedShares.length > 0 || respondedVoiceNotes.length > 0 || respondedMessages.length > 0;
 
   return (
     <div className="min-h-full bg-bg">
@@ -157,12 +190,7 @@ export default function TodayPage() {
             />
           ))}
 
-        {myEntry?.checkin_id ? (
-          <>
-            <MyVoiceNotes checkinId={myEntry.checkin_id} />
-            <MyTree entry={myEntry} onPrayed={flashPrayerToast} />
-          </>
-        ) : null}
+        {myEntry?.checkin_id ? <MyTree entry={myEntry} onPrayed={flashPrayerToast} /> : null}
 
         {/* The viewer's own share — nothing to act on, just theirs to watch
             reactions land on, so it sits outside either tab below. */}
@@ -174,23 +202,25 @@ export default function TodayPage() {
               <button
                 onClick={() => setActiveTab('new')}
                 aria-pressed={activeTab === 'new'}
-                className={`flex-1 rounded-md border py-sm text-center ${
+                className={`flex-1 rounded-md border py-sm text-center ${PRESSABLE} ${
                   activeTab === 'new' ? 'border-sage bg-surfaceRaised' : 'border-border'
                 }`}
               >
                 <span style={activeTab === 'new' ? tabTextActiveStyle : tabTextStyle}>
-                  {strings.sper.newSection} ({pendingCareCards.length + newShares.length})
+                  {strings.sper.newSection} (
+                  {pendingCareCards.length + newShares.length + pendingVoiceNotes.length + pendingMessages.length})
                 </span>
               </button>
               <button
                 onClick={() => setActiveTab('responded')}
                 aria-pressed={activeTab === 'responded'}
-                className={`flex-1 rounded-md border py-sm text-center ${
+                className={`flex-1 rounded-md border py-sm text-center ${PRESSABLE} ${
                   activeTab === 'responded' ? 'border-sage bg-surfaceRaised' : 'border-border'
                 }`}
               >
                 <span style={activeTab === 'responded' ? tabTextActiveStyle : tabTextStyle}>
-                  {strings.sper.respondedSection} ({respondedShares.length})
+                  {strings.sper.respondedSection} (
+                  {respondedShares.length + respondedVoiceNotes.length + respondedMessages.length})
                 </span>
               </button>
             </div>
@@ -215,6 +245,22 @@ export default function TodayPage() {
                       likePending={toggleLike.isPending}
                     />
                   ))}
+                  {pendingVoiceNotes.map((note) => (
+                    <VoiceNoteBanner
+                      key={note.id}
+                      note={note}
+                      receiving={markVoiceReceived.isPending}
+                      onReceived={(noteId) => markVoiceReceived.mutate(noteId)}
+                    />
+                  ))}
+                  {pendingMessages.map((message) => (
+                    <MessageBanner
+                      key={message.id}
+                      message={message}
+                      receiving={markMessageReceived.isPending}
+                      onReceived={(messageId) => markMessageReceived.mutate(messageId)}
+                    />
+                  ))}
                 </>
               ) : (
                 <p style={emptyStyle} className="py-lg text-center">
@@ -222,15 +268,23 @@ export default function TodayPage() {
                 </p>
               )
             ) : showRespondedSection ? (
-              respondedShares.map((item) => (
-                <ShareCard
-                  key={item.checkin_id}
-                  card={item}
-                  isSelf={false}
-                  onToggleLike={() => toggleLike.mutate(item.checkin_id)}
-                  likePending={toggleLike.isPending}
-                />
-              ))
+              <>
+                {respondedShares.map((item) => (
+                  <ShareCard
+                    key={item.checkin_id}
+                    card={item}
+                    isSelf={false}
+                    onToggleLike={() => toggleLike.mutate(item.checkin_id)}
+                    likePending={toggleLike.isPending}
+                  />
+                ))}
+                {respondedVoiceNotes.map((note) => (
+                  <ThankedConfirmation key={note.id} text={strings.care.thankedVoiceNote(note.sender_name)} />
+                ))}
+                {respondedMessages.map((message) => (
+                  <ThankedConfirmation key={message.id} text={strings.care.thankedMessage(message.sender_name)} />
+                ))}
+              </>
             ) : (
               <p style={emptyStyle} className="py-lg text-center">
                 {strings.sper.respondedEmpty}
@@ -245,7 +299,7 @@ export default function TodayPage() {
 
         <button
           onClick={() => router.push('/checkin')}
-          className="mt-sm rounded-md bg-sage p-md text-center shadow-sm"
+          className={`mt-sm rounded-md bg-sage p-md text-center shadow-sm ${PRESSABLE}`}
         >
           <span style={ctaTextStyle}>
             {myEntry?.checkin_id ? strings.sper.checkInCta : strings.sper.checkInCtaFirst}
@@ -265,30 +319,22 @@ export default function TodayPage() {
   );
 }
 
+/** A plain confirmation line for "Already responded" — a thanked voice
+ * note/message doesn't have notes or likes of its own, just this. */
+function ThankedConfirmation({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border p-lg shadow-sm" style={{ backgroundColor: color.bg, borderColor: color.sage }}>
+      <p style={thankedTextStyle} className="text-center">
+        {text}
+      </p>
+    </div>
+  );
+}
+
 function MyTree({ entry, onPrayed }: { entry: SperEntryDTO; onPrayed: () => void }) {
   const touchpoints = useTouchpoints(entry.checkin_id!);
   useNewPrayerAlert(touchpoints.data, onPrayed);
   return <SelfCareTree entry={entry} count={touchpoints.data?.length ?? 0} />;
-}
-
-/** Any voice notes waiting on the viewer's own check-in — the recording
- * disappears from here for good once they click Received. */
-function MyVoiceNotes({ checkinId }: { checkinId: string }) {
-  const voiceNotes = useVoiceNotes(checkinId);
-  const markReceived = useMarkVoiceNoteReceived(checkinId);
-  if (!voiceNotes.data || voiceNotes.data.length === 0) return null;
-  return (
-    <>
-      {voiceNotes.data.map((note) => (
-        <VoiceNoteBanner
-          key={note.id}
-          note={note}
-          receiving={markReceived.isPending}
-          onReceived={(noteId) => markReceived.mutate(noteId)}
-        />
-      ))}
-    </>
-  );
 }
 
 function CareCardWithLog({
@@ -303,6 +349,7 @@ function CareCardWithLog({
   const { user } = useSession();
   const logCare = useLogTouchpoint(circleId, card.checkin_id);
   const sendVoiceNote = useSendVoiceNote(circleId, card.checkin_id);
+  const sendMessage = useSendMessage(circleId, card.checkin_id);
   const touchpoints = useTouchpoints(card.checkin_id);
   const alreadyReached = reachedNames(touchpoints.data, user?.id);
   return (
@@ -319,6 +366,7 @@ function CareCardWithLog({
           })
           .then(() => undefined)
       }
+      onSendMessage={(body) => sendMessage.mutateAsync({ body }).then(() => undefined)}
       alreadyReached={alreadyReached}
     />
   );
@@ -343,9 +391,13 @@ function MemberDetailSheetWithLog({
   const checkinId = entry?.checkin_id ?? '';
   const logCare = useLogTouchpoint(circleId, checkinId);
   const sendVoiceNote = useSendVoiceNote(circleId, checkinId);
+  const sendMessage = useSendMessage(circleId, checkinId);
   const toggleLike = useToggleLike(circleId);
   const touchpoints = useTouchpoints(checkinId);
   const alreadyReached = reachedNames(touchpoints.data, user?.id);
+  const actionTypes = (touchpoints.data ?? [])
+    .filter((t) => t.responder_id === user?.id)
+    .map((t) => t.type);
   useNewPrayerAlert(isSelf ? touchpoints.data : undefined, onPrayed);
   return (
     <MemberDetailSheet
@@ -354,6 +406,7 @@ function MemberDetailSheetWithLog({
       isSelf={isSelf}
       alreadyReached={alreadyReached}
       touchpointCount={touchpoints.data?.length ?? 0}
+      actionTypes={actionTypes}
       onLogCare={(t: TouchpointType) => logCare.mutate({ type: t })}
       onToggleLike={() => toggleLike.mutate(checkinId)}
       likePending={toggleLike.isPending}
@@ -366,6 +419,7 @@ function MemberDetailSheetWithLog({
           })
           .then(() => undefined)
       }
+      onSendMessage={(body) => sendMessage.mutateAsync({ body }).then(() => undefined)}
       onClose={onClose}
     />
   );

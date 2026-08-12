@@ -1,4 +1,4 @@
-import type { CareCardDTO, ShareCardDTO } from '@sper/shared-types';
+import type { CareCardDTO, ShareCardDTO, TouchpointType } from '@sper/shared-types';
 import { parseCheckInNote } from './checkinNote';
 import { DIMENSIONS } from './checkinState';
 
@@ -18,6 +18,11 @@ export interface ShareableNote {
   flagged_dimensions: string[];
   like_count: number;
   liked_by_me: boolean;
+  /** Present only when this is a promoted Care Card — the viewer's own
+   * touchpoint type(s) for this check-in. Drives the "You [action] X!"
+   * title instead of the generic "wants to share" one, and means the card
+   * should render even when there's nothing positive left to show. */
+  actionTypes?: TouchpointType[];
 }
 
 export function fromShareCard(card: ShareCardDTO): ShareableNote {
@@ -32,7 +37,7 @@ export function fromShareCard(card: ShareCardDTO): ShareableNote {
   };
 }
 
-export function fromCareCard(card: CareCardDTO): ShareableNote {
+export function fromCareCard(card: CareCardDTO, actionTypes?: TouchpointType[]): ShareableNote {
   return {
     checkin_id: card.checkin_id,
     target_user_id: card.target_user_id,
@@ -41,6 +46,7 @@ export function fromCareCard(card: CareCardDTO): ShareableNote {
     flagged_dimensions: card.flagged_dimensions,
     like_count: card.like_count,
     liked_by_me: card.liked_by_me,
+    ...(actionTypes && actionTypes.length > 0 ? { actionTypes } : {}),
   };
 }
 

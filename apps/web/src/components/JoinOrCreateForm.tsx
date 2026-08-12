@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../api/client';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
@@ -75,7 +76,11 @@ export function JoinOrCreateForm({ onJoined }: { onJoined: (circleId: string) =>
 
       {error ? <p style={errorStyle}>{error}</p> : null}
 
-      <button onClick={go} disabled={busy} className="rounded-md bg-sage p-md text-center">
+      <button
+        onClick={go}
+        disabled={busy}
+        className={`rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
+      >
         <span style={primaryTextStyle}>{mode === 'create' ? strings.onboarding.create : strings.onboarding.join}</span>
       </button>
     </div>
@@ -87,7 +92,7 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex-1 rounded-md border p-sm text-center ${
+      className={`flex-1 rounded-md border p-sm text-center ${PRESSABLE} ${
         active ? 'border-sage bg-surfaceRaised' : 'border-border'
       }`}
     >

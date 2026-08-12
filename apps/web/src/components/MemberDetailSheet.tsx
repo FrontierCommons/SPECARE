@@ -23,8 +23,12 @@ interface Props {
   alreadyReached?: string[];
   /** Touchpoints of any kind, for the self-view tree's care count. */
   touchpointCount?: number;
+  /** The viewer's own touchpoint type(s) already logged for this check-in —
+   * drives the promoted ShareCard's "You [action] X!" title. */
+  actionTypes?: TouchpointType[];
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+  onSendMessage: (body: string) => Promise<void>;
   onToggleLike?: () => void;
   likePending?: boolean;
   onClose: () => void;
@@ -53,8 +57,10 @@ export function MemberDetailSheet({
   isSelf,
   alreadyReached,
   touchpointCount,
+  actionTypes,
   onLogCare,
   onSendVoiceNote,
+  onSendMessage,
   onToggleLike,
   likePending,
   onClose,
@@ -118,7 +124,7 @@ export function MemberDetailSheet({
           ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
             reached ? (
               <ShareCard
-                card={fromCareCard(careCard)}
+                card={fromCareCard(careCard, actionTypes)}
                 isSelf={false}
                 onToggleLike={onToggleLike}
                 likePending={likePending}
@@ -129,6 +135,7 @@ export function MemberDetailSheet({
                 entry={entry}
                 onLogCare={onLogCare}
                 onSendVoiceNote={onSendVoiceNote}
+                onSendMessage={onSendMessage}
                 alreadyReached={alreadyReached}
               />
             )

@@ -36,14 +36,38 @@ export function ShareCard({ card, isSelf, onToggleLike, likePending }: Props) {
   const flaggedSet = new Set(card.flagged_dimensions);
   const notedDimensions = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
 
-  if (notedDimensions.length === 0) return null;
+  // A promoted Care Card (the viewer already acted on the flagged part)
+  // shows up here even with nothing positive to share — the confirmation
+  // itself ("You prayed for X!") is the content, and the ONLY content: no
+  // notes, no like button, just the caption. A pure share needs at least
+  // one Thriving/Steady note to be worth showing at all.
+  const actionTypes = card.actionTypes ?? [];
+  const isPromotedAction = actionTypes.length > 0;
+  if (notedDimensions.length === 0 && !isPromotedAction) return null;
+
+  if (isPromotedAction) {
+    const title = strings.care.youActionedFor(
+      [...new Set(actionTypes.map((t) => strings.care.actionVerb[t]))],
+      card.target_name,
+    );
+    return (
+      <div
+        className="rounded-lg border p-lg shadow-sm"
+        style={{ backgroundColor: color.bg, borderColor: color.sage }}
+      >
+        <p style={titleStyle}>{title}</p>
+      </div>
+    );
+  }
+
+  const title = isSelf ? strings.care.youShared : strings.care.wantsToShare(card.target_name);
 
   return (
     <div
       className="flex flex-col gap-md rounded-lg border p-lg shadow-sm"
       style={{ backgroundColor: color.bg, borderColor: color.sage }}
     >
-      <p style={titleStyle}>{isSelf ? strings.care.youShared : strings.care.wantsToShare(card.target_name)}</p>
+      <p style={titleStyle}>{title}</p>
 
       {notedDimensions.map((dim) => (
         <p key={dim} style={noteStyle}>

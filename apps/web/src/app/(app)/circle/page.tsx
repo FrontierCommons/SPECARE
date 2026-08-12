@@ -10,6 +10,7 @@ import { JoinOrCreateForm } from '../../../components/JoinOrCreateForm';
 import { PactForm } from '../../../components/PactForm';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
+import { PRESSABLE } from '../../../design/interaction';
 
 type JoinStep = 'closed' | 'join' | 'pact';
 
@@ -75,7 +76,7 @@ export default function CirclePage() {
     return (
       <div className="min-h-full bg-bg p-lg">
         <div className="mb-md flex items-center justify-between">
-          <button onClick={() => setJoinStep('closed')}>
+          <button onClick={() => setJoinStep('closed')} className={PRESSABLE}>
             <span style={linkStyle}>‹ Back</span>
           </button>
         </div>
@@ -108,7 +109,7 @@ export default function CirclePage() {
   return (
     <div className="min-h-full bg-bg p-lg">
       <div className="flex items-center justify-between">
-        <button onClick={() => router.push('/today')}>
+        <button onClick={() => router.push('/today')} className={PRESSABLE}>
           <span style={linkStyle}>‹ Back</span>
         </button>
         <h1 style={titleStyle}>{strings.circle.title}</h1>
@@ -125,7 +126,7 @@ export default function CirclePage() {
                 key={c.circle_id}
                 onClick={() => setActiveCircle(c.circle_id)}
                 aria-pressed={active}
-                className={`shrink-0 rounded-pill border px-md py-xs ${
+                className={`shrink-0 rounded-pill border px-md py-xs ${PRESSABLE} ${
                   active ? 'border-sage bg-surfaceRaised' : 'border-border bg-surface'
                 }`}
               >
@@ -135,13 +136,16 @@ export default function CirclePage() {
           })}
           <button
             onClick={() => setJoinStep('join')}
-            className="shrink-0 rounded-pill border border-dashed border-border px-md py-xs"
+            className={`shrink-0 rounded-pill border border-dashed border-border px-md py-xs ${PRESSABLE}`}
           >
             <span style={chipAddTextStyle}>{strings.circle.joinAnother}</span>
           </button>
         </div>
 
-        <button onClick={makeInvite} className="rounded-md border border-sage bg-surfaceRaised p-md text-center shadow-sm">
+        <button
+          onClick={makeInvite}
+          className={`rounded-md border border-sage bg-surfaceRaised p-md text-center shadow-sm ${PRESSABLE}`}
+        >
           <span style={inviteTextStyle}>{strings.circle.invite}</span>
         </button>
         {code ? (
@@ -169,7 +173,7 @@ export default function CirclePage() {
           </div>
         ))}
 
-        <button onClick={leave} className="mt-lg p-md text-center">
+        <button onClick={leave} className={`mt-lg p-md text-center ${PRESSABLE}`}>
           <span style={leaveTextStyle}>{strings.circle.leave}</span>
         </button>
       </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../api/client';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 const eyebrowStyle = { ...type.caption, color: color.sage, letterSpacing: 2, textTransform: 'uppercase' as const };
 const covenantStyle = { ...type.display, color: color.textPrimary, fontSize: 32, lineHeight: '44px' };
@@ -47,7 +48,7 @@ export function PactForm({ circleId, onAgreed }: { circleId: string; onAgreed: (
         onClick={() => setChecked((c) => !c)}
         role="checkbox"
         aria-checked={checked}
-        className="flex items-center gap-sm text-left"
+        className={`flex items-center gap-sm text-left ${PRESSABLE}`}
       >
         <span
           className={`flex h-6 w-6 items-center justify-center rounded-sm border-[1.5px] ${
@@ -66,7 +67,7 @@ export function PactForm({ circleId, onAgreed }: { circleId: string; onAgreed: (
       <button
         onClick={agree}
         disabled={busy || !checked}
-        className={`rounded-md p-md text-center ${checked ? 'bg-sage' : 'bg-border'}`}
+        className={`rounded-md p-md text-center ${PRESSABLE} ${checked ? 'bg-sage' : 'bg-border'}`}
       >
         <span style={primaryTextStyle}>{strings.pact.agree}</span>
       </button>

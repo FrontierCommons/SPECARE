@@ -4,7 +4,7 @@
  * case, no filler, never clinical.
  */
 
-import type { CheckInDimension, StateLevel } from '@sper/shared-types';
+import type { CheckInDimension, StateLevel, TouchpointType } from '@sper/shared-types';
 
 interface AnswerOption {
   icon: string;
@@ -399,7 +399,6 @@ export const strings = {
     call: 'Call',
     pray: 'I prayed',
     logCare: 'I reached out',
-    messageCopied: 'Copied — paste it into your messaging app.',
     alreadyReached: (names: string) => `${names} already reached out`,
     acked: (name: string) => `${name} stepped up to hold space for you today.`,
     thankYou: 'Thank you!',
@@ -423,7 +422,24 @@ export const strings = {
     voiceNoteFrom: (name: string) => `${name} sent you a voice note`,
     voiceNotePlay: 'Play',
     voiceNotePause: 'Pause',
-    voiceNoteReceived: 'Received',
+
+    messagePlaceholder: 'Write something encouraging…',
+    messageSend: 'Send',
+    messageCancel: 'Cancel',
+    messageSending: 'Sending…',
+    messageFrom: (name: string) => `${name} sent you a message`,
+    thankedVoiceNote: (name: string) => `You thanked ${name} for their voice note!`,
+    thankedMessage: (name: string) => `You thanked ${name} for their message!`,
+
+    /** Verb phrase for each touchpoint type, used to build "You [verb] X!"
+     * once a Care Card's flagged part has been cared for. */
+    actionVerb: {
+      PrayedFor: 'prayed for',
+      TextSent: 'sent a message to',
+      VoiceNoteSent: 'sent a voice note to',
+      CallMade: 'called',
+    } as Record<TouchpointType, string>,
+    youActionedFor: (verbs: string[], name: string) => `You ${verbs.join(' and ')} ${name}!`,
 
     wantsToShare: (name: string) => `${name} wants to share something special!`,
     youShared: 'You shared to everyone!',

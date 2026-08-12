@@ -7,3 +7,24 @@ body {
   background-color: #1c2024;
   color: #ece7df;
 }
+
+@keyframes sper-click-bubble {
+  0% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(9);
+    opacity: 0;
+  }
+}
+
+/* Pointer/mouse-only — touch "hover" is sticky after a tap and would leave
+   the highlight stuck on, so this stays out of the way on touchscreens. */
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  a[href]:hover {
+    filter: brightness(1.14);
+    transition: filter 120ms ease;
+  }
+}

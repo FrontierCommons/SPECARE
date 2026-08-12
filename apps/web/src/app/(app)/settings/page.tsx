@@ -11,6 +11,7 @@ import { resizeImageToSquareDataUrl } from '../../../lib/resizeImage';
 import { enablePushNotifications, getPushStatus, type PushStatus } from '../../../lib/push';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
+import { PRESSABLE } from '../../../design/interaction';
 
 const FREQUENCIES: { value: CheckInFrequency; label: string }[] = [
   { value: 'once', label: strings.settings.frequencyOnce },
@@ -142,7 +143,11 @@ export default function SettingsPage() {
         <h1 style={titleStyle}>{strings.settings.title}</h1>
 
         <div className="flex items-center gap-md rounded-md bg-surface p-md shadow-sm">
-          <button onClick={() => fileInputRef.current?.click()} aria-label={strings.settings.changePhoto}>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={strings.settings.changePhoto}
+            className={PRESSABLE}
+          >
             <Avatar name={user.name} avatarUrl={user.avatar_url} size={56} />
           </button>
           <input
@@ -159,7 +164,7 @@ export default function SettingsPage() {
           <div className="flex-1">
             <p style={nameStyle}>{user.name}</p>
             <p style={emailStyle}>{user.email}</p>
-            <button onClick={() => fileInputRef.current?.click()} className="mt-xs">
+            <button onClick={() => fileInputRef.current?.click()} className={`mt-xs ${PRESSABLE}`}>
               <span style={changePhotoStyle}>{strings.settings.changePhoto}</span>
             </button>
             {photoError ? <p style={errorTextStyle}>{strings.settings.photoFailed}</p> : null}
@@ -175,7 +180,7 @@ export default function SettingsPage() {
             role="switch"
             aria-checked={user.notifications_paused}
             onClick={togglePause}
-            className="relative h-6 w-11 shrink-0 rounded-pill transition-colors"
+            className={`relative h-6 w-11 shrink-0 rounded-pill transition-colors ${PRESSABLE}`}
             style={{ backgroundColor: user.notifications_paused ? color.sage : color.border }}
           >
             <span
@@ -205,7 +210,7 @@ export default function SettingsPage() {
               <button
                 onClick={() => void enablePush()}
                 disabled={pushBusy || pushStatus === 'denied'}
-                className="shrink-0 rounded-md border border-sage px-md py-sm disabled:opacity-50"
+                className={`shrink-0 rounded-md border border-sage px-md py-sm disabled:opacity-50 ${PRESSABLE}`}
               >
                 <span style={linkTextStyle}>{strings.settings.enableBrowserNotifications}</span>
               </button>
@@ -229,7 +234,7 @@ export default function SettingsPage() {
                   key={f.value}
                   onClick={() => !active && setPendingFrequency(f.value)}
                   aria-pressed={active}
-                  className={`flex-1 rounded-md border py-sm text-center ${
+                  className={`flex-1 rounded-md border py-sm text-center ${PRESSABLE} ${
                     active ? 'border-sage bg-surfaceRaised' : 'border-border'
                   }`}
                 >
@@ -240,7 +245,10 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <button onClick={() => setShowPact((v) => !v)} className="flex items-center justify-between py-sm">
+        <button
+          onClick={() => setShowPact((v) => !v)}
+          className={`flex items-center justify-between py-sm ${PRESSABLE}`}
+        >
           <span style={linkTextStyle}>{strings.settings.viewPact}</span>
           <span style={chevronStyle}>{showPact ? '︿' : '﹀'}</span>
         </button>
@@ -250,16 +258,19 @@ export default function SettingsPage() {
           </div>
         ) : null}
 
-        <button onClick={() => setShowTutorial(true)} className="flex items-center justify-between py-sm">
+        <button
+          onClick={() => setShowTutorial(true)}
+          className={`flex items-center justify-between py-sm ${PRESSABLE}`}
+        >
           <span style={linkTextStyle}>{strings.settings.tutorial}</span>
           <span style={chevronStyle}>﹀</span>
         </button>
 
-        <button onClick={signOut} className="mt-lg p-md text-center">
+        <button onClick={signOut} className={`mt-lg p-md text-center ${PRESSABLE}`}>
           <span style={signOutTextStyle}>{strings.settings.signOut}</span>
         </button>
 
-        <button onClick={() => setShowDeleteConfirm(true)} className="p-md text-center">
+        <button onClick={() => setShowDeleteConfirm(true)} className={`p-md text-center ${PRESSABLE}`}>
           <span style={deleteAccountTextStyle}>{strings.settings.deleteAccount}</span>
         </button>
         {deleteError ? <p style={errorTextStyle} className="text-center">{strings.settings.deleteAccountFailed}</p> : null}

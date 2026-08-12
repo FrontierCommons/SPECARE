@@ -3,6 +3,7 @@ import type {
   CircleNotificationDTO,
   TouchpointDTO,
   VoiceNoteDTO,
+  InAppMessageDTO,
   StateLevel,
   TouchpointType,
 } from '@sper/shared-types';
@@ -11,6 +12,7 @@ import type {
   CircleNotificationRow,
   TouchpointLogRow,
   VoiceNoteRow,
+  CheckinMessageRow,
 } from '../db/schema';
 
 /**
@@ -72,6 +74,19 @@ export function toVoiceNoteDTO(row: VoiceNoteRow, senderName: string): VoiceNote
     mime_type: row.mimeType,
     duration_ms: row.durationMs,
     created_at: iso(row.createdAt),
+    received_at: isoOrNull(row.receivedAt),
+  };
+}
+
+export function toInAppMessageDTO(row: CheckinMessageRow, senderName: string): InAppMessageDTO {
+  return {
+    id: row.id,
+    checkin_id: row.checkinId,
+    sender_id: row.senderId,
+    sender_name: senderName,
+    body: row.body,
+    created_at: iso(row.createdAt),
+    received_at: isoOrNull(row.receivedAt),
   };
 }
 

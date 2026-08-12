@@ -8,7 +8,8 @@ import { DIMENSIONS, dimState } from '../lib/checkinState';
 import { parseCheckInNote } from '../lib/checkinNote';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
-import { openMessage, outreachPrefill } from '../lib/deeplink';
+import { MessageComposerSheet } from './MessageComposerSheet';
+import { PRESSABLE } from '../design/interaction';
 
 interface Props {
   card: CareCardDTO;
@@ -17,6 +18,7 @@ interface Props {
   entry?: SperEntryDTO | null;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+  onSendMessage: (body: string) => Promise<void>;
   alreadyReached?: string[]; // responder names
 }
 
@@ -25,8 +27,7 @@ const dimTextStyle = { ...type.caption, color: color.amber };
 const neutralAnswerStyle = { ...type.caption, color: color.textSecondary };
 const noteStyle = { ...type.caption,color: color.amber };
 const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sage };
-const actionTextStyle = { ...type.label, color: color.textPrimary };
-const actionTextPrimaryStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const actionTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
 const toggleTextStyle = { ...type.label, color: color.sage };
 const reachedStyle = { ...type.caption, color: color.textMuted };
 const reachedSelfStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
@@ -41,11 +42,10 @@ const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600
  * a ShareCard instead — so everything here assumes the viewer hasn't acted
  * yet, and stays purely informational + collapsed for anything not flagged.
  */
-export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReached }: Props) {
-  const prefill = outreachPrefill(card.target_name);
+export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessage, alreadyReached }: Props) {
   const selfReached = alreadyReached?.includes('You') ?? false;
   const [recorderVisible, setRecorderVisible] = useState(false);
-  const [showCopiedNotice, setShowCopiedNotice] = useState(false);
+  const [composerVisible, setComposerVisible] = useState(false);
   // Collapsed by default — these aren't part of what needs a response, so
   // they shouldn't compete for attention with the actions below.
   const [showOtherNotes, setShowOtherNotes] = useState(false);
@@ -60,14 +60,8 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReach
   const explainedButNotFlagged = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
   const hasOtherNotes = explainedButNotFlagged.length > 0 || !!general;
 
-  const sendMsg = async () => {
-    const outcome = await openMessage(prefill);
-    if (outcome === 'cancelled') return;
-    onLogCare('TextSent');
-    if (outcome === 'copied') {
-      setShowCopiedNotice(true);
-      setTimeout(() => setShowCopiedNotice(false), 4000);
-    }
+  const sendMessage = async (body: string) => {
+    await onSendMessage(body);
   };
 
   if (card.gratitude_shown) {
@@ -105,7 +99,10 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReach
 
       {hasOtherNotes ? (
         <div className="flex flex-col gap-sm">
-          <button onClick={() => setShowOtherNotes((v) => !v)} className="flex items-center gap-xs self-start">
+          <button
+            onClick={() => setShowOtherNotes((v) => !v)}
+            className={`flex items-center gap-xs self-start ${PRESSABLE}`}
+          >
             <span style={toggleTextStyle}>{strings.care.otherNotes}</span>
             <span style={toggleTextStyle}>{showOtherNotes ? '︿' : '﹀'}</span>
           </button>
@@ -127,8 +124,8 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReach
           {card.verse ? <p style={verseStyle}>{card.verse}</p> : null}
           <ResponderGuidanceBox />
           <div className="flex flex-col gap-sm">
-            <Action label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} primary />
-            <Action label={strings.care.sendMessage} onClick={sendMsg} />
+            <Action label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} />
+            <Action label={strings.care.sendMessage} onClick={() => setComposerVisible(true)} />
             <Action label={strings.care.pray} onClick={() => onLogCare('PrayedFor')} />
           </div>
         </>
@@ -141,31 +138,28 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, alreadyReach
         </p>
       ) : null}
 
-      {showCopiedNotice ? (
-        <p style={reachedSelfStyle} className="text-center">
-          {strings.care.messageCopied}
-        </p>
-      ) : null}
-
       <VoiceRecorderSheet
         visible={recorderVisible}
         onClose={() => setRecorderVisible(false)}
         onSend={onSendVoiceNote}
       />
+      <MessageComposerSheet
+        visible={composerVisible}
+        onClose={() => setComposerVisible(false)}
+        onSend={sendMessage}
+      />
     </div>
   );
 }
 
-function Action({ label, onClick, primary }: { label: string; onClick: () => void; primary?: boolean }) {
+function Action({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className={`rounded-md border py-md text-center ${
-        primary ? 'border-sage bg-sage' : 'border-border'
-      }`}
+      className={`rounded-md border border-sage bg-surface py-md text-center ${PRESSABLE}`}
     >
-      <span style={primary ? actionTextPrimaryStyle : actionTextStyle}>{label}</span>
+      <span style={actionTextStyle}>{label}</span>
     </button>
   );
 }

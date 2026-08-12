@@ -45,8 +45,10 @@ export class VoiceNoteRepo {
     return !!row;
   }
 
-  /** Pending (not yet acknowledged) notes for a check-in, oldest first. */
-  async listPending(exec: Executor, checkinId: string): Promise<VoiceNoteWithSender[]> {
+  /** Every note for a check-in, pending and already-thanked alike, oldest
+   * first — the caller buckets by `receivedAt` (New vs Already responded),
+   * same convention as Care/Share Cards and in-app messages. */
+  async listAll(exec: Executor, checkinId: string): Promise<VoiceNoteWithSender[]> {
     const rows = await exec
       .select({
         id: voiceNotes.id,
@@ -61,7 +63,7 @@ export class VoiceNoteRepo {
       })
       .from(voiceNotes)
       .innerJoin(users, eq(users.id, voiceNotes.senderId))
-      .where(and(eq(voiceNotes.checkinId, checkinId), isNull(voiceNotes.receivedAt)))
+      .where(eq(voiceNotes.checkinId, checkinId))
       .orderBy(asc(voiceNotes.createdAt));
     return rows as VoiceNoteWithSender[];
   }

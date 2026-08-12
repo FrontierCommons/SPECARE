@@ -9,6 +9,7 @@ import { Tree } from './Tree';
 import { DIMENSIONS } from '../lib/checkinState';
 import { color, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 interface Props {
   /** Called when the user taps Skip, at any step. */
@@ -51,7 +52,7 @@ export function TutorialModal({ onSkip, onFinish }: Props) {
     <div className="fixed inset-0 z-40 flex flex-col bg-bg">
       <div className="flex items-center justify-between p-lg">
         <span style={progressTextStyle}>{strings.tutorial.progress(step + 1, total)}</span>
-        <button onClick={onSkip}>
+        <button onClick={onSkip} className={PRESSABLE}>
           <span style={skipTextStyle}>{strings.tutorial.skip}</span>
         </button>
       </div>
@@ -79,7 +80,7 @@ export function TutorialModal({ onSkip, onFinish }: Props) {
           {step > 0 ? (
             <button
               onClick={back}
-              className="rounded-md border border-border px-xl py-md text-center"
+              className={`rounded-md border border-border px-xl py-md text-center ${PRESSABLE}`}
               style={{ minWidth: 120 }}
             >
               <span style={backTextStyle}>{strings.tutorial.back}</span>
@@ -87,7 +88,7 @@ export function TutorialModal({ onSkip, onFinish }: Props) {
           ) : null}
           <button
             onClick={next}
-            className="rounded-md bg-sage px-xl py-md text-center shadow-sm"
+            className={`rounded-md bg-sage px-xl py-md text-center shadow-sm ${PRESSABLE}`}
             style={{ minWidth: 120 }}
           >
             <span style={primaryTextStyle}>{isLast ? strings.tutorial.done : strings.tutorial.next}</span>

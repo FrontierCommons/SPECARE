@@ -2,6 +2,7 @@
 
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 const likeTextStyle = { ...type.label, fontWeight: 600 as const };
 
@@ -27,7 +28,7 @@ export function LikeButton({
       disabled={pending}
       aria-pressed={liked}
       aria-label={liked ? strings.care.liked : strings.care.like}
-      className="flex w-fit items-center gap-xs rounded-pill border px-md py-xs disabled:opacity-60"
+      className={`flex w-fit items-center gap-xs rounded-pill border px-md py-xs disabled:opacity-60 ${PRESSABLE}`}
       style={{
         borderColor: liked ? color.bloom : color.border,
         backgroundColor: liked ? color.surfaceRaised : 'transparent',

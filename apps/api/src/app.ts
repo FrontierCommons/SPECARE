@@ -7,6 +7,7 @@ import { circleRoutes } from './modules/circles/circles.routes';
 import { checkinRoutes } from './modules/checkins/checkins.routes';
 import { touchpointRoutes } from './modules/touchpoints/touchpoints.routes';
 import { voiceNoteRoutes } from './modules/voicenotes/voicenotes.routes';
+import { messageRoutes } from './modules/messages/messages.routes';
 import { gratitudeRoutes } from './modules/gratitude/gratitude.routes';
 import { userRoutes } from './modules/users/users.routes';
 
@@ -32,6 +33,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       await api.register(checkinRoutes);
       await api.register(touchpointRoutes);
       await api.register(voiceNoteRoutes);
+      await api.register(messageRoutes);
       await api.register(gratitudeRoutes);
       await api.register(userRoutes);
     },
