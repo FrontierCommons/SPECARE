@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../../components/ConfirmModal';
 import { resizeImageToSquareDataUrl } from '../../../lib/resizeImage';
 import { disablePushNotifications, enablePushNotifications, getPushStatus, type PushStatus } from '../../../lib/push';
 import { formatPromptTime, nextPromptAt } from '../../../lib/time';
+import { humanizeTimezone } from '../../../lib/timezones';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 import { PRESSABLE } from '../../../design/interaction';
@@ -251,7 +252,7 @@ export default function SettingsPage() {
 
         <div className="flex items-center justify-between rounded-md bg-surface p-md shadow-sm">
           <span style={rowLabelStyle}>{strings.settings.timezone}</span>
-          <span style={rowValueStyle}>{user.timezone}</span>
+          <span style={rowValueStyle}>{humanizeTimezone(user.timezone)}</span>
         </div>
 
         <div className="rounded-md bg-surface p-md shadow-sm">

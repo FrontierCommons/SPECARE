@@ -8,14 +8,20 @@ import { api } from '../../../api/client';
 import { Avatar } from '../../../components/Avatar';
 import { JoinOrCreateForm } from '../../../components/JoinOrCreateForm';
 import { PactForm } from '../../../components/PactForm';
+import { humanizeTimezone } from '../../../lib/timezones';
 import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 import { PRESSABLE } from '../../../design/interaction';
 
 type JoinStep = 'closed' | 'join' | 'pact';
 
-const titleStyle = { ...type.title, color: color.textPrimary };
-const linkStyle = { ...type.label, color: color.sage };
+// lineHeight: 1 on both — neither type.title nor type.label sets one, so
+// each falls back to the browser default (~1.2x font size) with its own
+// leading. Stripping that means each glyph's own box IS its font size, so
+// centering the two boxes (via items-center on the header row) centers the
+// glyphs themselves, not just two differently-padded line boxes around them.
+const titleStyle = { ...type.title, color: color.textPrimary, lineHeight: 1 };
+const linkStyle = { ...type.label, color: color.sage, lineHeight: 1 };
 const inviteTextStyle = { ...type.label, color: color.sage };
 const codeLabelStyle = { ...type.caption, color: color.textSecondary };
 const codeStyle = { ...type.display, color: color.textPrimary, letterSpacing: 6 };
@@ -30,8 +36,11 @@ const leaveTextStyle = { ...type.label, color: color.textPrimary };
 
 export default function CirclePage() {
   const router = useRouter();
-  const { activeCircleId, setActiveCircle, circles, refreshCircles } = useSession();
-  const circleId = activeCircleId!;
+  const { activeCircleId, setActiveCircle, circles, refreshCircles, markOnboardingDeferred } = useSession();
+  // Empty when circle-less — useMembers/useCreateInvite below both no-op on
+  // an empty id, and the render further down shows a reduced no-circle view
+  // instead of invite/members/leave.
+  const circleId = activeCircleId ?? '';
   const members = useMembers(circleId);
   const invite = useCreateInvite(circleId);
   const [code, setCode] = useState<string | null>(null);
@@ -68,15 +77,22 @@ export default function CirclePage() {
     // member already agreed to, or null if that was their last) rather than
     // forcing null and dropping them into onboarding while they still belong
     // to other circles.
-    await refreshCircles();
+    const remaining = await refreshCircles();
+    // If that was their last circle, mark onboarding deferred so RootGate
+    // lets /today render its own empty-circle state instead of bouncing
+    // straight back through onboarding.
+    if (remaining !== null && remaining.length === 0) await markOnboardingDeferred();
     router.push('/today');
   };
 
   if (joinStep === 'join') {
     return (
       <div className="min-h-full bg-bg p-lg">
-        <div className="mb-md flex items-center justify-between">
-          <button onClick={() => setJoinStep('closed')} className={PRESSABLE}>
+        <div className="mb-md flex items-center">
+          <button
+            onClick={() => setJoinStep('closed')}
+            className={`shrink-0 rounded-pill border border-border px-md py-xs ${PRESSABLE}`}
+          >
             <span style={linkStyle}>‹ Back</span>
           </button>
         </div>
@@ -108,72 +124,96 @@ export default function CirclePage() {
 
   return (
     <div className="min-h-full bg-bg p-lg">
-      <div className="flex items-center justify-between">
-        <button onClick={() => router.push('/today')} className={PRESSABLE}>
+      <div className="grid grid-cols-3 items-center">
+        <button
+          onClick={() => router.push('/today')}
+          className={`justify-self-start shrink-0 rounded-pill border border-border px-md py-xs ${PRESSABLE}`}
+        >
           <span style={linkStyle}>‹ Back</span>
         </button>
-        <h1 style={titleStyle}>{strings.circle.title}</h1>
-        <div className="w-11" />
+        <h1 style={titleStyle} className="col-start-2 text-center">
+          {strings.circle.title}
+        </h1>
       </div>
 
-      <div className="mt-md flex flex-col gap-md">
+      <div className="mt-xl flex flex-col gap-md">
         <p style={sectionStyle}>{strings.circle.yourCircles}</p>
-        <div className="flex gap-sm overflow-x-auto py-xs">
-          {agreedCircles.map((c) => {
-            const active = c.circle_id === circleId;
-            return (
-              <button
-                key={c.circle_id}
-                onClick={() => setActiveCircle(c.circle_id)}
-                aria-pressed={active}
-                className={`shrink-0 rounded-pill border px-md py-xs ${PRESSABLE} ${
-                  active ? 'border-sage bg-surfaceRaised' : 'border-border bg-surface'
-                }`}
-              >
-                <span style={active ? chipTextActiveStyle : chipTextStyle}>{c.name}</span>
-              </button>
-            );
-          })}
+        {activeCircleId ? (
+          <div className="flex gap-sm overflow-x-auto py-xs">
+            {agreedCircles.map((c) => {
+              const active = c.circle_id === circleId;
+              return (
+                <button
+                  key={c.circle_id}
+                  onClick={() => setActiveCircle(c.circle_id)}
+                  aria-pressed={active}
+                  className={`shrink-0 rounded-pill border px-md py-xs ${PRESSABLE} ${
+                    active ? 'border-sage bg-surfaceRaised' : 'border-border bg-surface'
+                  }`}
+                >
+                  <span style={active ? chipTextActiveStyle : chipTextStyle}>{c.name}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setJoinStep('join')}
+              className={`shrink-0 rounded-pill border border-dashed border-border px-md py-xs ${PRESSABLE}`}
+            >
+              <span style={chipAddTextStyle}>{strings.circle.joinAnother}</span>
+            </button>
+          </div>
+        ) : (
+          // No circle at all — the only option here is starting one; joining
+          // by code lives inside the join/create step this opens, not as a
+          // second choice in this row.
           <button
             onClick={() => setJoinStep('join')}
-            className={`shrink-0 rounded-pill border border-dashed border-border px-md py-xs ${PRESSABLE}`}
+            className={`shrink-0 self-start rounded-pill border border-dashed border-border px-md py-xs ${PRESSABLE}`}
           >
-            <span style={chipAddTextStyle}>{strings.circle.joinAnother}</span>
+            <span style={chipAddTextStyle}>{strings.circle.createNewCircle}</span>
           </button>
-        </div>
+        )}
 
-        <button
-          onClick={makeInvite}
-          className={`rounded-md border border-sage bg-surfaceRaised p-md text-center shadow-sm ${PRESSABLE}`}
-        >
-          <span style={inviteTextStyle}>{strings.circle.invite}</span>
-        </button>
-        {code ? (
-          <div className="flex flex-col items-center gap-xs rounded-md bg-surface p-md shadow-sm">
-            <span style={codeLabelStyle}>{copied ? 'Copied!' : strings.circle.inviteBody}</span>
-            <span style={codeStyle}>{code}</span>
-          </div>
+        {activeCircleId ? (
+          <>
+            <button
+              onClick={makeInvite}
+              className={`rounded-md border border-sage bg-surfaceRaised p-md text-center shadow-sm ${PRESSABLE}`}
+            >
+              <span style={inviteTextStyle}>{strings.circle.invite}</span>
+            </button>
+            {code ? (
+              <div className="flex flex-col items-center gap-xs rounded-md bg-surface p-md shadow-sm">
+                <span style={codeLabelStyle}>{copied ? 'Copied!' : strings.circle.inviteBody}</span>
+                <span style={codeStyle}>{code}</span>
+              </div>
+            ) : null}
+
+            <p style={sectionStyle} className="mt-md">
+              {strings.circle.members}
+            </p>
+            {members.data?.map((m) => (
+              <div key={m.user_id} className="flex items-center justify-between rounded-md bg-surface p-md shadow-sm">
+                <div className="flex items-center gap-md">
+                  <Avatar name={m.name} avatarUrl={m.avatar_url} size={40} />
+                  <div>
+                    <p style={memberNameStyle}>{m.name}</p>
+                    <p style={memberTzStyle}>{humanizeTimezone(m.timezone)}</p>
+                  </div>
+                </div>
+                <span style={{ ...pactStyle, color: m.covenant_agreed ? color.sage : color.textMuted }}>
+                  {m.covenant_agreed ? strings.circle.pactAgreed : strings.circle.pactPending}
+                </span>
+              </div>
+            ))}
+          </>
         ) : null}
 
-        <p style={sectionStyle} className="mt-md">
-          {strings.circle.members}
-        </p>
-        {members.data?.map((m) => (
-          <div key={m.user_id} className="flex items-center justify-between rounded-md bg-surface p-md shadow-sm">
-            <div className="flex items-center gap-md">
-              <Avatar name={m.name} avatarUrl={m.avatar_url} size={40} />
-              <div>
-                <p style={memberNameStyle}>{m.name}</p>
-                <p style={memberTzStyle}>{m.timezone}</p>
-              </div>
-            </div>
-            <span style={{ ...pactStyle, color: m.covenant_agreed ? color.sage : color.textMuted }}>
-              {m.covenant_agreed ? strings.circle.pactAgreed : strings.circle.pactPending}
-            </span>
-          </div>
-        ))}
-
-        <button onClick={leave} className={`mt-lg p-md text-center ${PRESSABLE}`}>
+        <button
+          onClick={leave}
+          disabled={!activeCircleId}
+          className={`mt-lg p-md text-center disabled:opacity-40 ${PRESSABLE}`}
+        >
           <span style={leaveTextStyle}>{strings.circle.leave}</span>
         </button>
       </div>

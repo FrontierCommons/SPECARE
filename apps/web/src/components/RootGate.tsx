@@ -22,17 +22,26 @@ const APP_HOME = '/today';
  *   not signed in                          -> /auth
  *   signed in, checking circle status      -> loading
  *   signed in, brand new, tutorial unseen   -> /onboarding/tutorial
- *   signed in, no circle yet                -> /onboarding/timezone
- *   signed in, circle pact unfinished       -> /onboarding/pact
+ *   signed in, circle joined, pact pending  -> /onboarding/pact
+ *   signed in, no circle, not deferred      -> /onboarding/timezone
+ *   signed in, no circle, deferred          -> /today (empty-circle state)
  *   signed in, active circle                -> /today (unless already elsewhere in the app)
  *
  * The tutorial only intercepts a truly first-time user: once they've made
  * any progress (a pendingCircleId, i.e. already past timezone/join) it stops
  * inserting itself, so it can't re-interrupt someone mid-setup just because
  * this device never recorded seeing it.
+ *
+ * "Deferred" (onboardingDeferred) covers two equivalent moments: the member
+ * explicitly picked "I'll do later" on the join/create screen, or they left
+ * their last remaining circle. Either way, once circle-less is a state they
+ * chose rather than mid-setup, RootGate stops routing them through
+ * onboarding and lets them into the app — Today renders its own "you're not
+ * in a circle yet" empty state with a way back into /onboarding/join.
  */
 export function RootGate({ children }: { children: React.ReactNode }) {
-  const { ready, user, activeCircleId, pendingCircleId, circlesReady, tutorialSeen } = useSession();
+  const { ready, user, activeCircleId, pendingCircleId, circlesReady, tutorialSeen, onboardingDeferred } =
+    useSession();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -50,15 +59,25 @@ export function RootGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!circlesReady || tutorialSeen === null) return;
+    if (!circlesReady || tutorialSeen === null || onboardingDeferred === null) return;
 
     if (!activeCircleId) {
       if (showTutorialFirst) {
         if (pathname !== TUTORIAL_PATH) router.replace(TUTORIAL_PATH);
         return;
       }
+      // A circle they've already started joining wins over any earlier
+      // defer — finish the pact rather than leaving it half-done.
+      if (pendingCircleId) {
+        if (pathname !== '/onboarding/pact') router.replace('/onboarding/pact');
+        return;
+      }
+      if (onboardingDeferred) {
+        if (pathname === AUTH_PATH || pathname === ROOT_PATH) router.replace(APP_HOME);
+        return;
+      }
       if (!ONBOARDING_PATHS.includes(pathname) || pathname === TUTORIAL_PATH) {
-        router.replace(pendingCircleId ? '/onboarding/pact' : '/onboarding/timezone');
+        router.replace('/onboarding/timezone');
       }
       return;
     }
@@ -69,13 +88,26 @@ export function RootGate({ children }: { children: React.ReactNode }) {
     if (pathname === AUTH_PATH || pathname === ROOT_PATH || ONBOARDING_PATHS.includes(pathname)) {
       router.replace(APP_HOME);
     }
-  }, [ready, user, circlesReady, activeCircleId, pendingCircleId, tutorialSeen, showTutorialFirst, pathname, router]);
+  }, [
+    ready,
+    user,
+    circlesReady,
+    activeCircleId,
+    pendingCircleId,
+    tutorialSeen,
+    onboardingDeferred,
+    showTutorialFirst,
+    pathname,
+    router,
+  ]);
 
   if (!ready) return <Spinner />;
   if (!user) return pathname === AUTH_PATH ? <>{children}</> : <Spinner />;
-  if (!circlesReady || tutorialSeen === null) return <Spinner />;
+  if (!circlesReady || tutorialSeen === null || onboardingDeferred === null) return <Spinner />;
   if (!activeCircleId) {
     if (showTutorialFirst) return pathname === TUTORIAL_PATH ? <>{children}</> : <Spinner />;
+    if (pendingCircleId) return pathname === '/onboarding/pact' ? <>{children}</> : <Spinner />;
+    if (onboardingDeferred) return pathname === AUTH_PATH || pathname === ROOT_PATH ? <Spinner /> : <>{children}</>;
     return ONBOARDING_PATHS.includes(pathname) && pathname !== TUTORIAL_PATH ? <>{children}</> : <Spinner />;
   }
   if (pathname === AUTH_PATH || pathname === ROOT_PATH || ONBOARDING_PATHS.includes(pathname)) return <Spinner />;

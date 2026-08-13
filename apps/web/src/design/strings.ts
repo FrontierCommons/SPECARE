@@ -47,7 +47,7 @@ const BOT_QUESTION_BANKS: Record<CheckInDimension, QuestionBank> = {
     {
       text: '🙏 Does God feel near or far today?',
       options: {
-        Thriving: { icon: '🫶', label: 'Very near' },
+        Thriving: { icon: '☀️', label: 'Very near' },
         Steady: { icon: '🌤️', label: 'Somewhat near' },
         Heavy: { icon: '🌫️', label: 'Somewhat distant' },
         'In the Pit': { icon: '🌑', label: 'Very distant' },
@@ -329,6 +329,7 @@ export const strings = {
     code: '6-character code',
     join: 'Join',
     create: 'Create',
+    doLater: 'I’ll do later',
   },
 
   pact: {
@@ -350,11 +351,14 @@ export const strings = {
     respondedSection: 'Already responded',
     newEmpty: 'You’ve caught up with everyone!',
     respondedEmpty: "You haven't responded to anything yet.",
+    noCircleYet: 'You’re not in a circle yet.',
+    createOrJoinCircle: 'Create or join a circle',
   },
 
   checkIn: {
     title: 'Share SPECARE with your friends',
     subtitle: 'Speak your care today. No wrong answers.',
+    noCircle: 'You have to join a circle to start checking-in!',
     notePlaceholder: 'Any quick context? Or prayer (optional)',
     submit: 'Share with my circle',
     dimensions: {
@@ -552,11 +556,12 @@ export const strings = {
     title: 'My circle',
     yourCircles: 'Your circles',
     joinAnother: '+ Join another circle',
+    createNewCircle: '+ Create a new circle',
     invite: 'Invite someone',
     inviteBody: 'Share this code. Anyone can join with it for the next 24 hours.',
     members: 'Members',
     leave: 'Leave circle',
-    pactAgreed: 'Agreed',
+    pactAgreed: 'Agreed the pact',
     pactPending: 'Pact pending',
   },
 

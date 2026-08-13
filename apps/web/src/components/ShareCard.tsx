@@ -84,10 +84,7 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
               <span style={reachedCountStyle}>{strings.care.reachedCount(reachedNames.length)}</span>
             </button>
             {showReachedDetail ? (
-              <>
-                <p style={actionTimeStyle}>{strings.care.alreadyReached(reachedNames.join(', '))}</p>
-                
-              </>
+              <p style={actionTimeStyle}>{strings.care.alreadyReached(reachedNames.join(', '))}</p>
             ) : null}
           </div>
         ) : null}

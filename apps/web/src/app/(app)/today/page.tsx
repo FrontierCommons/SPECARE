@@ -43,7 +43,7 @@ const circleNameStyle = { ...type.heading, color: color.sage, fontWeight: "bold"
 const circleChevronStyle = { ...type.heading, color: color.sage };
 const circleMenuItemStyle = { ...type.label, color: color.textSecondary };
 const circleMenuItemActiveStyle = { ...type.label, color: color.sage, fontWeight: 600 as const };
-const emptyStyle = { ...type.body, color: color.textSecondary, fontWeight: "italic",  };
+const emptyStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const  };
 const ctaTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const tabTextStyle = { ...type.caption, color: color.textPrimary };
 const tabTextActiveStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
@@ -52,7 +52,11 @@ const thankedTextStyle = { ...type.label, fontWeight: 600 as const, color: color
 export default function TodayPage() {
   const router = useRouter();
   const { activeCircleId, setActiveCircle, user, circles } = useSession();
-  const circleId = activeCircleId!;
+  // Empty when circle-less (deferred onboarding, or just left the only
+  // circle) — every data hook below already no-ops on an empty id, and the
+  // early return further down (after all hooks, per Rules of Hooks) renders
+  // the empty-circle state instead of the normal feed.
+  const circleId = activeCircleId ?? '';
   const circleName = circles.find((c) => c.circle_id === circleId)?.name;
   const agreedCircles = circles.filter((c) => c.covenant_agreed);
   const [circleMenuOpen, setCircleMenuOpen] = useState(false);
@@ -194,6 +198,27 @@ export default function TodayPage() {
     pendingCareCards.length > 0 || newShares.length > 0 || pendingVoiceNotes.length > 0 || pendingMessages.length > 0;
   const showRespondedSection =
     respondedShares.length > 0 || respondedVoiceNotes.length > 0 || respondedMessages.length > 0;
+
+  if (!activeCircleId) {
+    return (
+      <div className="flex min-h-full flex-col bg-bg">
+        <div className="flex flex-1 flex-col gap-lg p-lg">
+          <div className="relative mb-4">
+            <h1 style={titleStyle}>{strings.sper.title}</h1>
+          </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-md text-center">
+            <p style={emptyStyle}>{strings.sper.noCircleYet}</p>
+            <button
+              onClick={() => router.push('/onboarding/join')}
+              className={`rounded-md bg-sage p-md text-center shadow-sm ${PRESSABLE}`}
+            >
+              <span style={ctaTextStyle}>{strings.sper.createOrJoinCircle}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-bg">

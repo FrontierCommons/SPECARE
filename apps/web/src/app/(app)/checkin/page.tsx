@@ -40,7 +40,7 @@ const composerSkipStyle = { ...type.label, color: color.textMuted };
 const composerSendTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
 const resultSubtitleStyle = { ...type.caption, color: color.textMuted };
-const dimLabelStyle = { ...type.body, color: color.textSecondary };
+const dimLabelStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
 const dimEmptyStyle = { ...type.body, color: color.textMuted };
 const linkStyle = { ...type.label, color: color.sage };
 
@@ -52,7 +52,10 @@ const linkStyle = { ...type.label, color: color.sage };
 export default function CheckInPage() {
   const router = useRouter();
   const { activeCircleId, user } = useSession();
-  const circleId = activeCircleId!;
+  // Empty when circle-less — useSper/useSubmitCheckIn below both no-op on an
+  // empty id, and the early return further down (after all hooks, per Rules
+  // of Hooks) shows the no-circle message instead of the check-in flow.
+  const circleId = activeCircleId ?? '';
   const sper = useSper(circleId);
   const submit = useSubmitCheckIn(circleId);
   const [sel, setSel] = useState<Selections>({});
@@ -81,6 +84,14 @@ export default function CheckInPage() {
     const id = setTimeout(() => router.push('/today'), 1500);
     return () => clearTimeout(id);
   }, [step, router]);
+
+  if (!activeCircleId) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-bg p-lg text-center">
+        <p style={dimLabelStyle}>{strings.checkIn.noCircle}</p>
+      </div>
+    );
+  }
 
   if (sper.isLoading) {
     return (

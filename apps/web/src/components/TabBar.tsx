@@ -8,7 +8,10 @@ const TABS = [
   { href: '/today', label: strings.nav.today, glyph: '◔' },
   { href: '/checkin', label: strings.nav.checkIn, glyph: '✎' },
   { href: '/circle', label: strings.nav.circle, glyph: '◎' },
-  { href: '/settings', label: strings.nav.settings, glyph: '⚙' },
+  // U+FE0E forces the flat "text" glyph — without it, some platforms render
+  // ⚙ with its emoji presentation (colored), breaking from the other three
+  // tabs' plain currentColor-tinted symbols.
+  { href: '/settings', label: strings.nav.settings, glyph: '⚙︎' },
 ] as const;
 
 /**

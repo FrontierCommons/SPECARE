@@ -6,7 +6,7 @@ import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { PRESSABLE } from '../design/interaction';
 
-const eyebrowStyle = { ...type.caption, color: color.sage, letterSpacing: 2, textTransform: 'uppercase' as const };
+const eyebrowStyle = { ...type.title, color: color.sage, letterSpacing: 2, textTransform: 'uppercase' as const };
 const covenantStyle = { ...type.display, color: color.textPrimary, fontSize: 32, lineHeight: '44px' };
 const subtextStyle = { ...type.body, color: color.textSecondary };
 const checkboxLabelStyle = { ...type.body, color: color.textSecondary };
