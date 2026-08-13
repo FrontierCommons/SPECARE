@@ -25,8 +25,8 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="border-t border-border bg-surface py-sm shadow-md">
-      <div className="mx-auto flex w-full max-w-2xl">
+    <nav className="fixed inset-x-0 bottom-0 z-20 h-[72px] border-t border-border bg-surface shadow-md">
+      <div className="mx-auto flex h-full w-full max-w-2xl items-center">
         {TABS.map((tab) => {
           const selected = pathname === tab.href;
           return (

@@ -6,7 +6,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Constrained to a readable column on wide viewports — full-width
           content on a desktop browser reads as oversized boxes around
           phone-sized text; centering it keeps the two proportional. */}
-      <div className="mx-auto w-full max-w-2xl flex-1">{children}</div>
+      {/* pb-[72px] reserves space for the now-fixed TabBar so it never
+          covers the tail end of scrollable content. */}
+      <div className="mx-auto w-full max-w-2xl flex-1 pb-[72px]">{children}</div>
       <TabBar />
     </div>
   );
