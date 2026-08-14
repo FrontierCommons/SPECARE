@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CheckInFrequency } from '@sper/shared-types';
 import { useSession } from '../../../state/session';
+import { useTheme, type Theme } from '../../../state/theme';
 import { useUpdateProfile } from '../../../api/hooks';
 import { Avatar } from '../../../components/Avatar';
 import { TutorialModal } from '../../../components/TutorialModal';
@@ -21,17 +22,22 @@ const FREQUENCIES: { value: CheckInFrequency; label: string }[] = [
   { value: 'thrice', label: strings.settings.frequencyThrice },
 ];
 
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'dark', label: strings.settings.themeDark },
+  { value: 'light', label: strings.settings.themeLight },
+];
+
 const titleStyle = { ...type.display, color: color.textPrimary };
 const nameStyle = { ...type.heading, color: color.textPrimary };
 const emailStyle = { ...type.caption, color: color.textMuted };
-const changePhotoStyle = { ...type.caption, color: color.sage };
+const changePhotoStyle = { ...type.caption, color: color.sageText };
 const rowLabelStyle = { ...type.label, color: color.textPrimary };
 const rowBodyStyle = { ...type.caption, color: color.textMuted };
-const rowValueStyle = { ...type.body, color: color.sage };
+const rowValueStyle = { ...type.body, color: color.sageText };
 const segmentTextStyle = { ...type.caption, color: color.textSecondary };
-const segmentTextActiveStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
-const linkTextStyle = { ...type.label, color: color.sage };
-const chevronStyle = { fontSize: 24, fontWeight: 700 as const, color: color.sage };
+const segmentTextActiveStyle = { ...type.caption, color: color.sageText, fontWeight: 600 as const };
+const linkTextStyle = { ...type.label, color: color.sageText };
+const chevronStyle = { fontSize: 24, fontWeight: 700 as const, color: color.sageText };
 const pactTextStyle = { ...type.body, color: color.textSecondary };
 const signOutTextStyle = { ...type.label, color: color.textPrimary };
 const deleteAccountTextStyle = { ...type.label, color: color.destructive, fontWeight: 600 as const };
@@ -45,6 +51,7 @@ const versionStyle = { ...type.caption, color: color.textMuted };
  */
 export default function SettingsPage() {
   const { user, setUser, signOut, deleteAccount } = useSession();
+  const { theme, setTheme } = useTheme();
   const updateProfile = useUpdateProfile();
   const [showPact, setShowPact] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -204,10 +211,15 @@ export default function SettingsPage() {
             style={{ backgroundColor: user.notifications_paused ? color.sage : color.border }}
           >
             <span
-              className="absolute top-0.5 h-5 w-5 rounded-full transition-all duration-200"
+              className="absolute top-0.5 h-5 w-5 rounded-full shadow-sm transition-all duration-200"
               style={{
                 left: user.notifications_paused ? '22px' : '2px',
-                backgroundColor: color.textPrimary,
+                // A stable near-white knob regardless of theme or track
+                // color — like a physical switch, its own drop shadow (not
+                // hue contrast against the track) is what keeps it legible
+                // whether the track is sage-green or a light theme's tan
+                // border color.
+                backgroundColor: color.textOption,
               }}
             />
           </button>
@@ -278,6 +290,28 @@ export default function SettingsPage() {
           <p style={rowBodyStyle} className="mt-sm">
             {strings.settings.nextReminder(nextReminderLabel)}
           </p>
+        </div>
+
+        <div className="rounded-md bg-surface p-md shadow-sm">
+          <p style={rowLabelStyle}>{strings.settings.appearance}</p>
+          <p style={rowBodyStyle}>{strings.settings.appearanceBody}</p>
+          <div className="mt-sm flex gap-sm">
+            {THEMES.map((t) => {
+              const active = theme === t.value;
+              return (
+                <button
+                  key={t.value}
+                  onClick={() => setTheme(t.value)}
+                  aria-pressed={active}
+                  className={`flex-1 rounded-md border py-sm text-center ${PRESSABLE} ${
+                    active ? 'border-sage bg-surfaceRaised' : 'border-border'
+                  }`}
+                >
+                  <span style={active ? segmentTextActiveStyle : segmentTextStyle}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <button

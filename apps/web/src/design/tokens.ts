@@ -1,36 +1,65 @@
 /**
- * SPER design tokens (web port). Palette is warm and quiet by intent: nothing
- * here should feel like a dashboard or a game. State colors read as weather
+ * SPER design tokens (web port). Palette is warm by intent: nothing here
+ * should feel like a dashboard or a game. State colors read as weather
  * (clear → storm) to fit the Sper metaphor, deliberately NOT a green-to-red
  * performance ramp. Kept in sync by hand with apps/mobile/src/design/tokens.ts
- * — see that file for the source of truth on values.
+ * — see that file for the source of truth on values (mobile is dark-only;
+ * the light theme below is a web-only addition, see the Appearance setting).
+ *
+ * Theme-dependent tokens (bg/surface/border/text/sageText/amberText/
+ * bloomText) resolve through CSS custom properties defined in globals.css
+ * under `:root`/`[data-theme="dark"]` and `[data-theme="light"]`, so a
+ * single `data-theme` attribute on <html> (see state/theme.tsx) repaints
+ * every one of these at once — including plain inline `style={}` usages,
+ * since `var(--x)` is a valid CSS value wherever a hex string would be.
+ * Everything else here (accent fills, state colors, the tree card's own
+ * mood-colored backdrop) is the same in both themes: those are
+ * self-contained fills paired with a fixed text color, not page chrome.
  */
 
 import type { StateLevel } from '@sper/shared-types';
 
 export const color = {
-  // Warm slate base — calmer than pure grey, not the AI-default cream.
-  bg: '#1C2024', // deep warm slate (dark, restful)
-  surface: '#252A2F',
-  surfaceRaised: '#3c4b59',
-  border: '#3A424A',
+  // Theme-dependent — see globals.css for the light/dark values.
+  bg: 'var(--color-bg)',
+  surface: 'var(--color-surface)',
+  surfaceRaised: 'var(--color-surface-raised)',
+  border: 'var(--color-border)',
   option: "#111827",
 
-  textPrimary: '#ECE7DF', // warm off-white
-  textSecondary: '#A7A399',
-  textMuted: '#e4e0d8',
+  textPrimary: 'var(--color-text-primary)',
+  textSecondary: 'var(--color-text-secondary)',
+  textMuted: 'var(--color-text-muted)',
+  // Stable near-white regardless of theme — for text/icons that sit on a
+  // vivid, always-saturated fill (a selected state pill, the tree card's own
+  // dark mood-backdrop), which needs light text whether the page around it
+  // is dark or bright.
   textOption: '#f7f6f4',
+  // Stable dark tone regardless of theme — the inverse of textOption, for
+  // text/icons on a light-to-medium accent fill (a sage/bloom button, a
+  // colored avatar). Reuses the old dark-theme bg value, since that's
+  // exactly the contrast these fills were already tuned against.
+  ink: '#1C2024',
 
-  // Accents
+  // Accents — fills stay identical in both themes (they're self-contained
+  // colored surfaces, not page background).
   sage: '#8FA98C', // soft green — quiet, living
   sageDeep: '#5F7A5C',
   amber: '#c7a923', // muted amber — warmth, not alarm
+
+  // The same three accents used AS TEXT (a link, a verse, a heading) need a
+  // deeper shade to stay legible once the page itself is bright — the
+  // original values were tuned for light-on-dark, which washes out as
+  // light-on-light. Dark theme keeps the original (already-legible) value.
+  sageText: 'var(--color-sage-text)',
+  amberText: 'var(--color-amber-text)',
+  bloomText: 'var(--color-bloom-text)',
 
   // State colors — weather, not a scoreboard. Tuned for even saturation
   // across all four (the old set ranged from 54% down to a nearly-grey 13%
   // on statePit, which read as "dull" next to the richer green/blue) while
   // keeping lightness in the same band so contrast against dark fill-text
-  // (color.bg, used when one of these is a filled background) doesn't shift.
+  // (color.ink, used when one of these is a filled background) doesn't shift.
   stateThriving: '#349B27', // clear sky (sage)
   stateSteady: '#2D9ED2', // calm blue
   stateHeavy: '#D89446', // overcast amber
@@ -48,7 +77,8 @@ export const color = {
   destructiveSoft: 'rgba(229,72,77,0.16)',
 
   // The tree card's own backdrop — brighter and warm when the tree is
-  // healthy, dimmer and duller when it's withering. A mood, not a chart.
+  // healthy, dimmer and duller when it's withering. A mood, not a chart —
+  // same in both themes, like the other accent fills above.
   treeCardHealthy: '#166b44',
   treeCardHealthyBorder: '#0c5b39',
   treeCardWithered: '#1D1F1C',
@@ -131,17 +161,23 @@ export function colorForName(name: string): string {
   return avatarPalette[hash % avatarPalette.length]!;
 }
 
+// Font roles, loaded via next/font/google in app/layout.tsx as CSS
+// variables — Fraunces for warmth on display copy, Inter for legibility
+// everywhere else. Referencing the variables here (rather than each call
+// site importing a font module) keeps every `style={type.x}` usage in sync.
+const displayFace = 'var(--font-display), Georgia, serif';
+const bodyFace = 'var(--font-body), system-ui, sans-serif';
+
 export const type = {
-  // Display face carries warmth; body stays highly legible. In a real build
-  // these map to loaded fonts (e.g. Fraunces + Inter); we name the roles here.
+  // Display face carries warmth; body stays highly legible.
   // Sized up from mobile's RN point values — read at web/desktop viewing
   // distance inside wide containers, these need to be larger to read right.
-  display: { fontSize: 40, fontWeight: '600' as const, letterSpacing: 0.2 },
-  title: { fontSize: 28, fontWeight: '600' as const },
-  heading: { fontSize: 22, fontWeight: '600' as const },
-  body: { fontSize: 18, fontWeight: '400' as const, lineHeight: '28px' },
-  label: { fontSize: 16, fontWeight: '500' as const },
-  caption: { fontSize: 14, fontWeight: '400' as const },
+  display: { fontSize: 40, fontWeight: '600' as const, letterSpacing: 0.2, fontFamily: displayFace },
+  title: { fontSize: 28, fontWeight: '600' as const, fontFamily: displayFace },
+  heading: { fontSize: 22, fontWeight: '600' as const, fontFamily: displayFace },
+  body: { fontSize: 18, fontWeight: '400' as const, lineHeight: '28px', fontFamily: bodyFace },
+  label: { fontSize: 16, fontWeight: '500' as const, fontFamily: bodyFace },
+  caption: { fontSize: 14, fontWeight: '400' as const, fontFamily: bodyFace },
 } as const;
 
 export const tokens = { color, stateVisual, space, radius, elevation, motion, type };

@@ -19,7 +19,7 @@ const titleStyle = { ...type.title, color: color.textPrimary };
 const hintStyle = { ...type.body, color: color.textSecondary };
 const timerStyle = { ...type.heading, color: color.textPrimary };
 const actionTextStyle = { ...type.label, color: color.textPrimary };
-const actionTextPrimaryStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const actionTextPrimaryStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const errorStyle = { ...type.caption, color: color.statePit };
 const cancelStyle = { ...type.label, color: color.textMuted };
 
@@ -214,7 +214,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
               className="flex items-center justify-center rounded-full"
               style={{ width: 72, height: 72, backgroundColor: color.statePit }}
             >
-              <span className="block rounded-full" style={{ width: 24, height: 24, backgroundColor: color.bg }} />
+              <span className="block rounded-full" style={{ width: 24, height: 24, backgroundColor: color.ink }} />
             </span>
             <span style={hintStyle}>{strings.care.recordTapToStart}</span>
           </button>
@@ -229,7 +229,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
               className={`flex items-center justify-center rounded-full ${PRESSABLE}`}
               style={{ width: 72, height: 72, backgroundColor: color.stateHeavy }}
             >
-              <span className="block rounded" style={{ width: 22, height: 22, backgroundColor: color.bg }} />
+              <span className="block rounded" style={{ width: 22, height: 22, backgroundColor: color.ink }} />
             </button>
             <p style={hintStyle}>{strings.care.recording}</p>
           </>
@@ -254,7 +254,7 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
               className={`flex h-14 w-14 items-center justify-center rounded-full ${PRESSABLE}`}
               style={{ backgroundColor: color.sage }}
             >
-              <span style={{ color: color.bg, fontWeight: 700, fontSize: 18 }}>{playing ? '❙❙' : '▶'}</span>
+              <span style={{ color: color.ink, fontWeight: 700, fontSize: 18 }}>{playing ? '❙❙' : '▶'}</span>
             </button>
             <p style={hintStyle}>{strings.care.recordPreviewHint}</p>
             <div className="flex gap-md">

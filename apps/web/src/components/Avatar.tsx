@@ -25,7 +25,7 @@ export function Avatar({ name, avatarUrl, size = 44 }: Props) {
       style={{ ...dimension, backgroundColor: colorForName(name) }}
       className="flex items-center justify-center"
     >
-      <span style={{ color: color.bg, fontWeight: 700, fontSize: size * 0.4 }}>{initial}</span>
+      <span style={{ color: color.ink, fontWeight: 700, fontSize: size * 0.4 }}>{initial}</span>
     </div>
   );
 }

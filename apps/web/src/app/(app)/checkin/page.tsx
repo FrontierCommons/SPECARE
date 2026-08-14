@@ -32,17 +32,18 @@ const DONE_STEP = DIMENSIONS.length + 1;
 const EXPLAIN_MAX_LENGTH = 300;
 
 const titleStyle = { ...type.title, color: color.textPrimary };
+const subtitleStyle = { ...type.caption, color: color.textSecondary };
 const closeGlyphStyle = { ...type.heading, color: color.textMuted };
 const optionLabelStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight: 500 as const, color: color.textOption };
 const explainOptionTextStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 const explainPromptStyle = { ...type.caption, color: color.textMuted };
 const composerSkipStyle = { ...type.label, color: color.textMuted };
-const composerSendTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
-const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const composerSendTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
+const primaryTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const resultSubtitleStyle = { ...type.caption, color: color.textMuted };
 const dimLabelStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
 const dimEmptyStyle = { ...type.body, color: color.textMuted };
-const linkStyle = { ...type.label, color: color.sage };
+const linkStyle = { ...type.label, color: color.sageText };
 
 /**
  * Defaults to showing today's result, not re-prompting a fresh check-in every
@@ -183,9 +184,12 @@ export default function CheckInPage() {
   const cancel = () => (hasResult ? setUpdating(false) : router.push('/today'));
 
   return (
-    <div className="flex min-h-full flex-col gap-md bg-bg p-lg">
-      <div className="flex items-center justify-between">
-        <h1 style={titleStyle}>{strings.checkIn.title}</h1>
+    <div className="sper-warm-glow flex min-h-full flex-col gap-md bg-bg p-lg">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-xs">
+          <h1 style={titleStyle}>{strings.checkIn.title}</h1>
+          <p style={subtitleStyle}>{strings.checkIn.subtitle}</p>
+        </div>
         <button onClick={cancel} aria-label={strings.common.cancel} className={`p-xs ${PRESSABLE}`}>
           <span style={closeGlyphStyle}>✕</span>
         </button>
@@ -218,7 +222,7 @@ export default function CheckInPage() {
                       key={level}
                       onClick={() => answer(DIMENSIONS[step]!, level)}
                       aria-label={opt.label}
-                      className={`flex items-center gap-sm rounded-md px-md py-sm ${PRESSABLE}`}
+                      className={`flex items-center gap-sm rounded-md px-md py-sm shadow-sm ${PRESSABLE}`}
                       style={{ backgroundColor: stateVisual[level].color }}
                     >
                       <span style={{ fontSize: 20 }}>{opt.icon}</span>
@@ -340,14 +344,14 @@ function ResultView({
   onOpenSettings: () => void;
 }) {
   return (
-    <div className="min-h-full bg-bg p-lg">
-      <div className="flex flex-col gap-md">
+    <div className="sper-warm-glow min-h-full bg-bg p-lg">
+      <div className="animate-fade-in-up flex flex-col gap-md">
         <h1 style={titleStyle}>{strings.checkIn.resultTitle}</h1>
         {entry.created_at ? (
           <p style={resultSubtitleStyle}>{strings.checkIn.resultSubtitle(relativeTime(entry.created_at))}</p>
         ) : null}
 
-        <div className="flex flex-col gap-sm rounded-md bg-surface p-md shadow-sm">
+        <div className="flex flex-col gap-sm rounded-md bg-surface p-md shadow-md">
           {DIMENSIONS.map((dim) => {
             const st = dimState(entry, dim);
             return (

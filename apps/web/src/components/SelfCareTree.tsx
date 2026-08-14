@@ -10,14 +10,24 @@ import { aggregateState } from '../lib/checkinState';
 import { pickVerse } from '../lib/verses';
 import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { PRESSABLE } from '../design/interaction';
 
 const THANKED_KEY_PREFIX = 'sper.thankedCount.';
 
-const titleStyle = { ...type.title, color: color.textPrimary };
-const countStyle = { ...type.caption, color: color.textMuted };
+// This card's own backdrop (treeCardHealthy/treeCardWithered) stays a fixed
+// dark green/near-black mood color in both themes — see the comment on
+// those tokens — so its text needs to stay light regardless of theme too,
+// unlike everything else in this file, which lives on the ordinary page/
+// card surface and should track the light/dark flip normally. textOption
+// is reused here for exactly that: a stable near-white already used
+// elsewhere for text on a fixed, always-saturated fill.
+const titleStyle = { ...type.title, color: color.textOption };
+const countStyle = { ...type.caption, color: color.textOption, opacity: 0.75 };
 const verseStyle = { ...type.body, fontSize: 18, color: color.sage, fontWeight: 600 as const, fontStyle: 'italic' as const, lineHeight: '22px' };
-const encourageTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
-const thankBtnTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
+const encourageTextStyle = { ...type.label, color: color.textOption, fontWeight: 600 as const };
+// The "Thank you" button's own fill (color.bloom) is fixed regardless of
+// theme, same as the sage/bloom CTAs elsewhere — ink matches that pattern.
+const thankBtnTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 
 /**
  * Your own tree, always visible when you've checked in today — not just on
@@ -79,7 +89,7 @@ export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: num
 
   return (
     <div
-      className="flex flex-col items-center gap-sm rounded-lg border p-lg shadow-sm"
+      className="flex flex-col items-center gap-sm rounded-lg border p-lg shadow-lg"
       style={
         healthy
           ? { backgroundColor: color.treeCardHealthy, borderColor: color.treeCardHealthyBorder }
@@ -106,7 +116,7 @@ export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: num
               onClick={sayThanks}
               disabled={gratitude.isPending}
               aria-label={strings.care.thankYou}
-              className="mt-sm rounded-pill px-lg py-sm"
+              className={`mt-sm rounded-pill px-lg py-sm shadow-sm ${PRESSABLE}`}
               style={{ backgroundColor: color.bloom }}
             >
               <span style={thankBtnTextStyle}>{justSent ? strings.care.gratitudeSent : strings.care.thankYou}</span>

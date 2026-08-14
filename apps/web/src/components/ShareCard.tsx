@@ -14,7 +14,7 @@ import { PRESSABLE } from '../design/interaction';
 const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.textPrimary};
 const dimTextStyle = { ...type.caption, fontWeight: 600 as const, color: color.textPrimary };
 const actionTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
-const reachedCountStyle = { ...type.caption, fontSize: 12, color: color.sage };
+const reachedCountStyle = { ...type.caption, fontSize: 12, color: color.sageText };
 const likeCountStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 
 interface Props {
@@ -67,7 +67,7 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
     const reachedNames = card.reachedNames ?? [];
     return (
       <div
-        className="flex flex-col gap-xs rounded-lg border p-lg shadow-sm"
+        className="flex flex-col gap-xs rounded-lg border p-lg shadow-md"
         style={{ backgroundColor: color.bg, borderColor: color.sage }}
       >
         <p style={titleStyle}>{title}</p>
@@ -95,7 +95,7 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
   const title = isSelf ? strings.care.youShared : strings.care.wantsToShare(card.target_name);
 
   return (
-    <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-sm">
+    <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-md">
       <p style={titleStyle}>{title}</p>
 
       {notedDimensions.map((dim) => {

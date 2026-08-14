@@ -14,7 +14,7 @@ export default function JoinPage() {
   const { setPendingCircle, markOnboardingDeferred } = useSession();
 
   return (
-    <div className="relative mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center bg-bg p-lg">
+    <div className="sper-warm-glow relative mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center bg-bg p-lg">
       <button
         onClick={() => {
           void markOnboardingDeferred();
@@ -24,12 +24,14 @@ export default function JoinPage() {
       >
         <span style={doLaterTextStyle}>{strings.onboarding.doLater}</span>
       </button>
-      <JoinOrCreateForm
-        onJoined={(circleId) => {
-          setPendingCircle(circleId);
-          router.push('/onboarding/pact');
-        }}
-      />
+      <div className="animate-fade-in-up">
+        <JoinOrCreateForm
+          onJoined={(circleId) => {
+            setPendingCircle(circleId);
+            router.push('/onboarding/pact');
+          }}
+        />
+      </div>
     </div>
   );
 }
