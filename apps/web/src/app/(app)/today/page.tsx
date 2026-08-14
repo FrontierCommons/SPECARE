@@ -39,14 +39,14 @@ import { color, type } from '../../../design/tokens';
 import { strings } from '../../../design/strings';
 
 const titleStyle = { ...type.display, color: color.textPrimary };
-const circleNameStyle = { ...type.heading, color: color.sage, fontWeight: "bold" };
-const circleChevronStyle = { ...type.heading, color: color.sage };
+const circleNameStyle = { ...type.heading, color: color.sageText, fontWeight: "bold" };
+const circleChevronStyle = { ...type.heading, color: color.sageText };
 const circleMenuItemStyle = { ...type.label, color: color.textSecondary };
-const circleMenuItemActiveStyle = { ...type.label, color: color.sage, fontWeight: 600 as const };
+const circleMenuItemActiveStyle = { ...type.label, color: color.sageText, fontWeight: 600 as const };
 const emptyStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const  };
-const ctaTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const ctaTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const tabTextStyle = { ...type.caption, color: color.textPrimary };
-const tabTextActiveStyle = { ...type.caption, color: color.sage, fontWeight: 600 as const };
+const tabTextActiveStyle = { ...type.caption, color: color.sageText, fontWeight: 600 as const };
 const thankedTextStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
 
 export default function TodayPage() {
@@ -201,12 +201,15 @@ export default function TodayPage() {
 
   if (!activeCircleId) {
     return (
-      <div className="flex min-h-full flex-col bg-bg">
+      <div className="sper-warm-glow flex min-h-full flex-col bg-bg">
         <div className="flex flex-1 flex-col gap-lg p-lg">
           <div className="relative mb-4">
             <h1 style={titleStyle}>{strings.sper.title}</h1>
           </div>
-          <div className="flex flex-1 flex-col items-center justify-center gap-md text-center">
+          <div className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-md text-center">
+            <span aria-hidden style={{ fontSize: 56 }}>
+              🌱
+            </span>
             <p style={emptyStyle}>{strings.sper.noCircleYet}</p>
             <button
               onClick={() => router.push('/onboarding/join')}
@@ -221,7 +224,7 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="min-h-full bg-bg">
+    <div className="sper-warm-glow min-h-full bg-bg">
       <Toast message={toastMessage ?? ''} visible={!!toastMessage} />
 
       <div className="flex flex-col gap-lg p-lg">
@@ -270,7 +273,9 @@ export default function TodayPage() {
         </div>
 
         {sper.data && sper.data.length > 0 ? (
-          <SperWidget entries={sper.data} currentUserId={user?.id} onSelect={setSelected} />
+          <div className="animate-fade-in-up">
+            <SperWidget entries={sper.data} currentUserId={user?.id} onSelect={setSelected} />
+          </div>
         ) : (
           <p style={emptyStyle} className="py-xl text-center">
             {strings.sper.empty}
@@ -283,19 +288,28 @@ export default function TodayPage() {
         {care.data
           ?.filter((card) => card.target_user_id !== user?.id && card.gratitude_shown)
           .map((card) => (
-            <CareCardWithLog
-              key={card.checkin_id}
-              circleId={circleId}
-              card={card}
-              entry={sper.data?.find((e) => e.user_id === card.target_user_id)}
-            />
+            <div key={card.checkin_id} className="animate-fade-in-up">
+              <CareCardWithLog
+                circleId={circleId}
+                card={card}
+                entry={sper.data?.find((e) => e.user_id === card.target_user_id)}
+              />
+            </div>
           ))}
 
-        {myEntry?.checkin_id ? <MyTree entry={myEntry} onPrayed={flashPrayerToast} /> : null}
+        {myEntry?.checkin_id ? (
+          <div className="animate-fade-in-up">
+            <MyTree entry={myEntry} onPrayed={flashPrayerToast} />
+          </div>
+        ) : null}
 
         {/* The viewer's own share — nothing to act on, just theirs to watch
             reactions land on, so it sits outside either tab below. */}
-        {myShare ? <ShareCard card={myShare} isSelf entry={myEntry} /> : null}
+        {myShare ? (
+          <div className="animate-fade-in-up">
+            <ShareCard card={myShare} isSelf entry={myEntry} />
+          </div>
+        ) : null}
 
         {showNewSection || showRespondedSection ? (
           <div className="flex flex-col gap-md">
@@ -329,39 +343,46 @@ export default function TodayPage() {
             {activeTab === 'new' ? (
               showNewSection ? (
                 <>
-                  {pendingCareCards.map((card) => (
-                    <CareCardWithLog
-                      key={card.checkin_id}
-                      circleId={circleId}
-                      card={card}
-                      entry={sper.data?.find((e) => e.user_id === card.target_user_id)}
-                    />
+                  {pendingCareCards.map((card, i) => (
+                    <Staggered key={card.checkin_id} index={i}>
+                      <CareCardWithLog
+                        circleId={circleId}
+                        card={card}
+                        entry={sper.data?.find((e) => e.user_id === card.target_user_id)}
+                      />
+                    </Staggered>
                   ))}
-                  {newShares.map((item) => (
-                    <ShareCard
-                      key={item.checkin_id}
-                      card={item}
-                      isSelf={false}
-                      entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
-                      onToggleLike={() => toggleLike.mutate(item.checkin_id)}
-                      likePending={toggleLike.isPending}
-                    />
+                  {newShares.map((item, i) => (
+                    <Staggered key={item.checkin_id} index={pendingCareCards.length + i}>
+                      <ShareCard
+                        card={item}
+                        isSelf={false}
+                        entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
+                        onToggleLike={() => toggleLike.mutate(item.checkin_id)}
+                        likePending={toggleLike.isPending}
+                      />
+                    </Staggered>
                   ))}
-                  {pendingVoiceNotes.map((note) => (
-                    <VoiceNoteBanner
-                      key={note.id}
-                      note={note}
-                      receiving={markVoiceReceived.isPending}
-                      onReceived={(noteId) => markVoiceReceived.mutate(noteId)}
-                    />
+                  {pendingVoiceNotes.map((note, i) => (
+                    <Staggered key={note.id} index={pendingCareCards.length + newShares.length + i}>
+                      <VoiceNoteBanner
+                        note={note}
+                        receiving={markVoiceReceived.isPending}
+                        onReceived={(noteId) => markVoiceReceived.mutate(noteId)}
+                      />
+                    </Staggered>
                   ))}
-                  {pendingMessages.map((message) => (
-                    <MessageBanner
+                  {pendingMessages.map((message, i) => (
+                    <Staggered
                       key={message.id}
-                      message={message}
-                      receiving={markMessageReceived.isPending}
-                      onReceived={(messageId) => markMessageReceived.mutate(messageId)}
-                    />
+                      index={pendingCareCards.length + newShares.length + pendingVoiceNotes.length + i}
+                    >
+                      <MessageBanner
+                        message={message}
+                        receiving={markMessageReceived.isPending}
+                        onReceived={(messageId) => markMessageReceived.mutate(messageId)}
+                      />
+                    </Staggered>
                   ))}
                 </>
               ) : (
@@ -371,21 +392,26 @@ export default function TodayPage() {
               )
             ) : showRespondedSection ? (
               <>
-                {respondedShares.map((item) => (
-                  <ShareCard
-                    key={item.checkin_id}
-                    card={item}
-                    isSelf={false}
-                    entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
-                    onToggleLike={() => toggleLike.mutate(item.checkin_id)}
-                    likePending={toggleLike.isPending}
-                  />
+                {respondedShares.map((item, i) => (
+                  <Staggered key={item.checkin_id} index={i}>
+                    <ShareCard
+                      card={item}
+                      isSelf={false}
+                      entry={sper.data?.find((e) => e.user_id === item.target_user_id)}
+                      onToggleLike={() => toggleLike.mutate(item.checkin_id)}
+                      likePending={toggleLike.isPending}
+                    />
+                  </Staggered>
                 ))}
-                {respondedVoiceNotes.map((note) => (
-                  <ThankedConfirmation key={note.id} text={strings.care.thankedVoiceNote(note.sender_name)} />
+                {respondedVoiceNotes.map((note, i) => (
+                  <Staggered key={note.id} index={respondedShares.length + i}>
+                    <ThankedConfirmation text={strings.care.thankedVoiceNote(note.sender_name)} />
+                  </Staggered>
                 ))}
-                {respondedMessages.map((message) => (
-                  <ThankedConfirmation key={message.id} text={strings.care.thankedMessage(message.sender_name)} />
+                {respondedMessages.map((message, i) => (
+                  <Staggered key={message.id} index={respondedShares.length + respondedVoiceNotes.length + i}>
+                    <ThankedConfirmation text={strings.care.thankedMessage(message.sender_name)} />
+                  </Staggered>
                 ))}
               </>
             ) : (
@@ -422,11 +448,23 @@ export default function TodayPage() {
   );
 }
 
+/** Wraps a feed item in the shared fade-in-up entrance, offsetting each by
+ * its position so a freshly-rendered list settles in as a soft cascade
+ * rather than all at once. Capped so a long list doesn't keep newer items
+ * waiting a visibly long time to appear. */
+function Staggered({ index, children }: { index: number; children: React.ReactNode }) {
+  return (
+    <div className="animate-fade-in-up" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
+      {children}
+    </div>
+  );
+}
+
 /** A plain confirmation line for "Already responded" — a thanked voice
  * note/message doesn't have notes or likes of its own, just this. */
 function ThankedConfirmation({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border p-lg shadow-sm" style={{ backgroundColor: color.bg, borderColor: color.sage }}>
+    <div className="rounded-lg border p-lg shadow-md" style={{ backgroundColor: color.bg, borderColor: color.sage }}>
       <p style={thankedTextStyle} className="text-center">
         {text}
       </p>

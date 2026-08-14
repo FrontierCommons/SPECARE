@@ -34,11 +34,20 @@ export function TabBar() {
               key={tab.href}
               href={tab.href}
               aria-current={selected ? 'page' : undefined}
-              className="flex flex-1 flex-col items-center gap-0.5 py-xs"
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-xs"
             >
-              <span className={`text-2xl ${selected ? 'text-sage' : 'text-textMuted'}`}>{tab.glyph}</span>
+              {selected ? (
+                <span className="absolute top-0 h-[2px] w-8 rounded-pill bg-sage" aria-hidden />
+              ) : null}
               <span
-                className={`text-[13px] ${selected ? 'font-semibold text-sage' : 'text-textMuted'}`}
+                className={`text-2xl transition-colors duration-150 ${selected ? 'text-sage' : 'text-textMuted'}`}
+              >
+                {tab.glyph}
+              </span>
+              <span
+                className={`text-[13px] transition-colors duration-150 ${
+                  selected ? 'font-semibold text-sage' : 'text-textMuted'
+                }`}
               >
                 {tab.label}
               </span>

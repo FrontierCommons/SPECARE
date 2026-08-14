@@ -12,8 +12,8 @@ interface Props {
   receiving?: boolean;
 }
 
-const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sage };
-const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloom };
+const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sageText };
+const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloomText };
 
 /**
  * Web port of apps/mobile/src/components/VoiceNoteBanner.tsx. The audio
@@ -70,7 +70,7 @@ export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
           className={`flex h-12 w-12 items-center justify-center rounded-full ${PRESSABLE}`}
           style={{ backgroundColor: color.sage }}
         >
-          <span style={{ color: color.bg, fontWeight: 700 }}>{playing ? '❙❙' : '▶'}</span>
+          <span style={{ color: color.ink, fontWeight: 700 }}>{playing ? '❙❙' : '▶'}</span>
         </button>
         <button
           onClick={() => onReceived(note.id)}

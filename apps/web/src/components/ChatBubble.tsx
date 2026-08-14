@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { color, type } from '../design/tokens';
 
 const botTextStyle = { ...type.body, fontSize: 17, color: color.textPrimary };
-const userTextStyle = { ...type.body, fontSize: 17, color: color.bg, fontWeight: 500 as const };
+const userTextStyle = { ...type.body, fontSize: 17, color: color.ink, fontWeight: 500 as const };
 
 /**
  * One message in the check-in "conversation" — bot on the left, the

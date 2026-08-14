@@ -18,11 +18,13 @@ export default function PactPage() {
   if (!pendingCircleId) return null;
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center bg-bg p-xl">
-      <PactForm
-        circleId={pendingCircleId}
-        onAgreed={() => setActiveCircle(pendingCircleId)} // RootGate takes it from here, to /today
-      />
+    <div className="sper-warm-glow mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center bg-bg p-xl">
+      <div className="animate-fade-in-up">
+        <PactForm
+          circleId={pendingCircleId}
+          onAgreed={() => setActiveCircle(pendingCircleId)} // RootGate takes it from here, to /today
+        />
+      </div>
     </div>
   );
 }

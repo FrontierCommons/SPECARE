@@ -11,9 +11,9 @@ import { PRESSABLE } from '../../../design/interaction';
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
-const tzTextStyle = { ...type.heading, color: color.sage };
-const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
-const linkStyle = { ...type.label, color: color.sage };
+const tzTextStyle = { ...type.heading, color: color.sageText };
+const primaryTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
+const linkStyle = { ...type.label, color: color.sageText };
 const selectTextStyle = { ...type.body, color: color.textPrimary };
 
 /**
@@ -56,52 +56,56 @@ export default function TimezonePage() {
 
   if (confirmedTz) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-md bg-bg p-lg">
-        <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
-        <div className="w-fit rounded-md border border-border bg-surface p-md">
-          <span style={tzTextStyle}>
-            {labelWithOffset(options.find((z) => z.value === confirmedTz) ?? { value: confirmedTz, label: confirmedTz })}
-          </span>
+      <div className="sper-warm-glow mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-md bg-bg p-lg">
+        <div className="animate-fade-in-up flex flex-col gap-md">
+          <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
+          <div className="w-fit rounded-md border border-border bg-surface p-md shadow-md">
+            <span style={tzTextStyle}>
+              {labelWithOffset(options.find((z) => z.value === confirmedTz) ?? { value: confirmedTz, label: confirmedTz })}
+            </span>
+          </div>
+          <p style={bodyStyle}>{strings.onboarding.timezoneBody}</p>
+          <button
+            onClick={() => router.push('/onboarding/join')}
+            className={`mt-md rounded-md bg-sage p-md text-center shadow-sm ${PRESSABLE}`}
+          >
+            <span style={primaryTextStyle}>{strings.onboarding.looksRight}</span>
+          </button>
+          <button onClick={() => setConfirmedTz(null)} className={`py-sm text-center ${PRESSABLE}`}>
+            <span style={linkStyle}>{strings.onboarding.changeTimezone}</span>
+          </button>
         </div>
-        <p style={bodyStyle}>{strings.onboarding.timezoneBody}</p>
-        <button
-          onClick={() => router.push('/onboarding/join')}
-          className={`mt-md rounded-md bg-sage p-md text-center ${PRESSABLE}`}
-        >
-          <span style={primaryTextStyle}>{strings.onboarding.looksRight}</span>
-        </button>
-        <button onClick={() => setConfirmedTz(null)} className={`py-sm text-center ${PRESSABLE}`}>
-          <span style={linkStyle}>{strings.onboarding.changeTimezone}</span>
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-md bg-bg p-lg">
-      <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
-      <p style={bodyStyle}>{strings.onboarding.timezonePrompt}</p>
+    <div className="sper-warm-glow mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-md bg-bg p-lg">
+      <div className="animate-fade-in-up flex flex-col gap-md">
+        <h1 style={titleStyle}>{strings.onboarding.timezoneTitle}</h1>
+        <p style={bodyStyle}>{strings.onboarding.timezonePrompt}</p>
 
-      <select
-        value={selected}
-        onChange={(e) => setSelected(e.target.value)}
-        className="rounded-md border border-border bg-surface p-md"
-        style={selectTextStyle}
-      >
-        {options.map((z) => (
-          <option key={z.value} value={z.value}>
-            {labelWithOffset(z)}
-          </option>
-        ))}
-      </select>
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          className="rounded-md border border-border bg-surface p-md"
+          style={selectTextStyle}
+        >
+          {options.map((z) => (
+            <option key={z.value} value={z.value}>
+              {labelWithOffset(z)}
+            </option>
+          ))}
+        </select>
 
-      <button
-        onClick={confirm}
-        disabled={busy}
-        className={`mt-md rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
-      >
-        <span style={primaryTextStyle}>{strings.onboarding.confirmTimezone}</span>
-      </button>
+        <button
+          onClick={confirm}
+          disabled={busy}
+          className={`mt-md rounded-md bg-sage p-md text-center shadow-sm disabled:opacity-60 ${PRESSABLE}`}
+        >
+          <span style={primaryTextStyle}>{strings.onboarding.confirmTimezone}</span>
+        </button>
+      </div>
     </div>
   );
 }

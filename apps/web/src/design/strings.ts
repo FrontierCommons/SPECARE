@@ -489,6 +489,10 @@ export const strings = {
     aboutCircle: 'About this circle',
     viewPact: 'Review the pact',
     tutorial: 'Tutorial',
+    appearance: 'Appearance',
+    appearanceBody: 'Choose how SPECARE looks on this device.',
+    themeDark: 'Dark',
+    themeLight: 'Light',
     signOut: 'Sign out',
     version: 'SPECARE · version 0.1.0',
 

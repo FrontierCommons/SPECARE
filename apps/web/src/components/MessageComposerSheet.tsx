@@ -18,7 +18,7 @@ type Phase = 'idle' | 'sending';
 const titleStyle = { ...type.title, color: color.textPrimary };
 const inputTextStyle = { ...type.body, fontSize: 17, color: color.textPrimary };
 const hintStyle = { ...type.body, color: color.textSecondary };
-const actionTextPrimaryStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const actionTextPrimaryStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const errorStyle = { ...type.caption, color: color.destructive };
 const cancelStyle = { ...type.label, color: color.textMuted };
 

@@ -2,10 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme variables consumed by design/tokens.ts (`var(--color-x)` strings) —
+   dark is the default/current look, unchanged from before this existed.
+   Light is the new warm/bright Appearance option (Settings). Setting
+   `data-theme` on <html> (see state/theme.tsx) repaints every token at
+   once, including plain inline `style={}` usages, since a CSS variable
+   resolves the same way there as in a class. */
+:root,
+[data-theme='dark'] {
+  --color-bg: #1c2024;
+  --color-surface: #252a2f;
+  --color-surface-raised: #3c4b59;
+  --color-border: #3a424a;
+  --color-text-primary: #ece7df;
+  --color-text-secondary: #a7a399;
+  --color-text-muted: #e4e0d8;
+  /* Already legible as light-on-dark — light theme deepens these instead. */
+  --color-sage-text: #8fa98c;
+  --color-amber-text: #c7a923;
+  --color-bloom-text: #e0984a;
+}
+
+[data-theme='light'] {
+  --color-bg: #faf1e4;
+  --color-surface: #fffcf6;
+  --color-surface-raised: #f1e3c8;
+  --color-border: #e4d2ac;
+  --color-text-primary: #332a1f;
+  --color-text-secondary: #6b5d4a;
+  --color-text-muted: #9c8c74;
+  /* Deepened from the accent's own fill color so text stays readable on a
+     bright page instead of washing out. */
+  --color-sage-text: #3e5a3a;
+  --color-amber-text: #7a5f13;
+  --color-bloom-text: #9a5220;
+}
+
 html,
 body {
-  background-color: #1c2024;
-  color: #ece7df;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 @keyframes sper-click-bubble {
@@ -27,4 +64,69 @@ body {
     filter: brightness(1.14);
     transition: filter 120ms ease;
   }
+}
+
+/* One warm, consistent focus treatment for every text field in the app —
+   sage-tinted rather than the browser's default blue, so filling out a form
+   still feels like it belongs to this app. Color mirrors design/tokens.ts
+   color.sage; hardcoded here since this file isn't processed through the
+   token module. */
+input,
+textarea,
+select {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #8fa98c;
+  box-shadow: 0 0 0 3px rgba(143, 169, 140, 0.25);
+}
+
+/* Shared entrance for cards/list items — a quiet settle-in rather than a
+   pop, matching motion.easing.decelerate in design/tokens.ts. Apply with an
+   inline `animationDelay` per index for a stagger effect. */
+@keyframes sper-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: sper-fade-in-up 420ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+}
+
+/* Ambient warmth behind every screen — three color washes (sage top-left,
+   bloom top-right, a whisper of steady-blue at the bottom) so scrolling a
+   long feed still feels held instead of running out into flat color partway
+   down. `background-attachment: fixed` is the load-bearing part: it anchors
+   the gradient positions to the *viewport*, not the element's own (often
+   much taller) content box, so the glow stays visible the whole scroll
+   instead of only near the top of whatever it's painted on.
+   Dark theme: a vignette layer sits beneath the color washes and darkens
+   everything away from them, so the glow reads as a deliberate lit zone
+   against a page that visibly recedes around it. Light theme drops that
+   vignette entirely — darkening toward black is exactly wrong on a bright
+   page — and leans on card shadows/surface contrast instead. */
+.sper-warm-glow {
+  background-image:
+    radial-gradient(ellipse 55% 46% at 8% 0%, rgba(143, 169, 140, 0.3), transparent 58%),
+    radial-gradient(ellipse 50% 42% at 100% 8%, rgba(224, 152, 74, 0.22), transparent 56%),
+    radial-gradient(ellipse 62% 48% at 50% 100%, rgba(45, 158, 210, 0.15), transparent 60%),
+    radial-gradient(ellipse 130% 100% at 50% 25%, transparent 15%, rgba(0, 0, 0, 0.32) 68%, rgba(0, 0, 0, 0.5) 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+[data-theme='light'] .sper-warm-glow {
+  background-image:
+    radial-gradient(ellipse 55% 46% at 8% 0%, rgba(143, 169, 140, 0.16), transparent 60%),
+    radial-gradient(ellipse 50% 42% at 100% 8%, rgba(224, 152, 74, 0.14), transparent 58%),
+    radial-gradient(ellipse 62% 48% at 50% 100%, rgba(45, 158, 210, 0.08), transparent 62%);
 }

@@ -8,7 +8,7 @@ import { PRESSABLE } from '../design/interaction';
 
 const titleStyle = { ...type.title, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
-const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const primaryTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const errorStyle = { ...type.caption, color: color.statePit };
 const tabTextStyle = { ...type.caption, color: color.textSecondary };
 const tabTextActiveStyle = { ...type.caption, color: color.textPrimary };
@@ -79,7 +79,7 @@ export function JoinOrCreateForm({ onJoined }: { onJoined: (circleId: string) =>
       <button
         onClick={go}
         disabled={busy}
-        className={`rounded-md bg-sage p-md text-center disabled:opacity-60 ${PRESSABLE}`}
+        className={`rounded-md bg-sage p-md text-center shadow-sm disabled:opacity-60 ${PRESSABLE}`}
       >
         <span style={primaryTextStyle}>{mode === 'create' ? strings.onboarding.create : strings.onboarding.join}</span>
       </button>

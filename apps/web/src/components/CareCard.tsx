@@ -24,12 +24,12 @@ interface Props {
 }
 
 const titleStyle = { ...type.title, color: color.textPrimary };
-const dimTextStyle = { ...type.caption, color: color.bg, fontWeight: 600 as const };
+const dimTextStyle = { ...type.caption, color: color.ink, fontWeight: 600 as const };
 const neutralAnswerStyle = { ...type.caption, color: color.textSecondary };
-const noteStyle = { ...type.caption,color: color.amber };
-const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sage };
+const noteStyle = { ...type.caption,color: color.amberText };
+const verseStyle = { ...type.body, fontSize: 16, lineHeight: '22px', color: color.sageText };
 const actionTextStyle = { ...type.label, color: color.textPrimary, fontWeight: 600 as const };
-const toggleTextStyle = { ...type.label, color: color.sage };
+const toggleTextStyle = { ...type.label, color: color.sageText };
 const gratitudeStyle = { ...type.body, color: color.textPrimary, fontWeight: 600 as const };
 
 /**
@@ -73,7 +73,7 @@ export function CareCard({
   if (card.gratitude_shown) {
     return (
       <div
-        className="self-center rounded-lg border px-lg py-md shadow-sm"
+        className="self-center rounded-lg border px-lg py-md shadow-md"
         style={{ backgroundColor: color.bloomSoft, borderColor: color.bloom, maxWidth: 420 }}
       >
         <p style={gratitudeStyle} className="text-center">
@@ -84,7 +84,7 @@ export function CareCard({
   }
 
   return (
-    <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-sm">
+    <div className="flex flex-col gap-md rounded-lg border border-border bg-surface p-lg shadow-md">
       <p style={titleStyle}>{strings.care.cardTitle(card.target_name)}</p>
 
       <div className="flex flex-col gap-sm">
@@ -137,10 +137,10 @@ export function CareCard({
         <>
           <ResponderGuidanceBox />
           <div className="flex flex-col gap-sm">
-            <Action label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} />
-            <Action label={strings.care.sendMessage} onClick={() => setComposerVisible(true)} />
-            <Action label={strings.care.call} onClick={() => onLogCare('CallMade')} />
-            <Action label={strings.care.pray} onClick={() => onLogCare('PrayedFor')} />
+            <Action icon="🎙️" label={strings.care.sendVoiceNote} onClick={() => setRecorderVisible(true)} />
+            <Action icon="💬" label={strings.care.sendMessage} onClick={() => setComposerVisible(true)} />
+            <Action icon="📞" label={strings.care.call} onClick={() => onLogCare('CallMade')} />
+            <Action icon="🙏" label={strings.care.pray} onClick={() => onLogCare('PrayedFor')} />
           </div>
         </>
       ) : null}
@@ -161,13 +161,16 @@ export function CareCard({
   );
 }
 
-function Action({ label, onClick }: { label: string; onClick: () => void }) {
+function Action({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       aria-label={label}
-      className={`rounded-md border border-sage bg-surface py-md text-center ${PRESSABLE}`}
+      className={`flex items-center justify-center gap-sm rounded-md border border-sage bg-surface py-md text-center ${PRESSABLE}`}
     >
+      <span aria-hidden style={{ fontSize: 18 }}>
+        {icon}
+      </span>
       <span style={actionTextStyle}>{label}</span>
     </button>
   );

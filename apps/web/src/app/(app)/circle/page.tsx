@@ -21,13 +21,13 @@ type JoinStep = 'closed' | 'join' | 'pact';
 // centering the two boxes (via items-center on the header row) centers the
 // glyphs themselves, not just two differently-padded line boxes around them.
 const titleStyle = { ...type.title, color: color.textPrimary, lineHeight: 1 };
-const linkStyle = { ...type.label, color: color.sage, lineHeight: 1 };
-const inviteTextStyle = { ...type.label, color: color.sage };
+const linkStyle = { ...type.label, color: color.sageText, lineHeight: 1 };
+const inviteTextStyle = { ...type.label, color: color.sageText };
 const codeLabelStyle = { ...type.caption, color: color.textSecondary };
 const codeStyle = { ...type.display, color: color.textPrimary, letterSpacing: 6 };
 const sectionStyle = { ...type.heading, color: color.textPrimary };
 const chipTextStyle = { ...type.label, color: color.textSecondary };
-const chipTextActiveStyle = { ...type.label, color: color.sage, fontWeight: 600 as const };
+const chipTextActiveStyle = { ...type.label, color: color.sageText, fontWeight: 600 as const };
 const chipAddTextStyle = { ...type.label, color: color.textMuted };
 const memberNameStyle = { ...type.heading, color: color.textPrimary };
 const memberTzStyle = { ...type.caption, color: color.textMuted };
@@ -201,7 +201,7 @@ export default function CirclePage() {
                     <p style={memberTzStyle}>{humanizeTimezone(m.timezone)}</p>
                   </div>
                 </div>
-                <span style={{ ...pactStyle, color: m.covenant_agreed ? color.sage : color.textMuted }}>
+                <span style={{ ...pactStyle, color: m.covenant_agreed ? color.sageText : color.textMuted }}>
                   {m.covenant_agreed ? strings.circle.pactAgreed : strings.circle.pactPending}
                 </span>
               </div>
