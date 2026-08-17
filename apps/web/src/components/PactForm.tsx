@@ -6,11 +6,11 @@ import { color, type } from '../design/tokens';
 import { strings } from '../design/strings';
 import { PRESSABLE } from '../design/interaction';
 
-const eyebrowStyle = { ...type.title, color: color.sage, letterSpacing: 2, textTransform: 'uppercase' as const };
+const eyebrowStyle = { ...type.title, color: color.sageText, letterSpacing: 2, textTransform: 'uppercase' as const };
 const covenantStyle = { ...type.display, color: color.textPrimary, fontSize: 32, lineHeight: '44px' };
 const subtextStyle = { ...type.body, color: color.textSecondary };
 const checkboxLabelStyle = { ...type.body, color: color.textSecondary };
-const primaryTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const primaryTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const errorStyle = { ...type.caption, color: color.statePit };
 
 /**
@@ -41,7 +41,9 @@ export function PactForm({ circleId, onAgreed }: { circleId: string; onAgreed: (
   return (
     <div className="flex flex-col gap-lg">
       <span style={eyebrowStyle}>{strings.pact.title}</span>
-      <p style={covenantStyle}>{strings.pact.body}</p>
+      <p style={covenantStyle} className="border-l-2 border-sage pl-md">
+        {strings.pact.body}
+      </p>
       <p style={subtextStyle}>{strings.pact.subtext}</p>
 
       <button
@@ -67,7 +69,7 @@ export function PactForm({ circleId, onAgreed }: { circleId: string; onAgreed: (
       <button
         onClick={agree}
         disabled={busy || !checked}
-        className={`rounded-md p-md text-center ${PRESSABLE} ${checked ? 'bg-sage' : 'bg-border'}`}
+        className={`rounded-md p-md text-center ${PRESSABLE} ${checked ? 'bg-sage shadow-sm' : 'bg-border'}`}
       >
         <span style={primaryTextStyle}>{strings.pact.agree}</span>
       </button>

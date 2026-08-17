@@ -24,8 +24,8 @@ const progressTextStyle = { ...type.caption, fontSize: 15, color: color.textMute
 const skipTextStyle = { ...type.label, fontSize: 18, color: color.textMuted };
 const titleStyle = { ...type.title, fontSize: 32, color: color.textPrimary };
 const bodyStyle = { ...type.body, fontSize: 21, lineHeight: '32px', color: color.textSecondary };
-const primaryTextStyle = { ...type.label, fontSize: 19, color: color.bg, fontWeight: 600 as const };
-const backTextStyle = { ...type.label, fontSize: 19, color: color.sage };
+const primaryTextStyle = { ...type.label, fontSize: 19, color: color.ink, fontWeight: 600 as const };
+const backTextStyle = { ...type.label, fontSize: 19, color: color.sageText };
 const legendLabelStyle = { ...type.label, fontSize: 15, fontWeight: 600 as const, color: color.textPrimary };
 const legendDescStyle = { ...type.caption, fontSize: 13, color: color.textMuted };
 const orbNameStyle = { ...type.caption, fontSize: 15, color: color.textSecondary };
@@ -50,7 +50,7 @@ export function TutorialModal({ onSkip, onFinish }: Props) {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-bg">
+    <div className="sper-warm-glow fixed inset-0 z-40 flex flex-col bg-bg">
       <div className="flex items-center justify-between p-lg">
         <span style={progressTextStyle}>{strings.tutorial.progress(step + 1, total)}</span>
         <button onClick={onSkip} className={PRESSABLE}>
@@ -58,7 +58,10 @@ export function TutorialModal({ onSkip, onFinish }: Props) {
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-lg overflow-y-auto px-xl text-center">
+      <div
+        key={step}
+        className="animate-fade-in-up flex flex-1 flex-col items-center justify-center gap-lg overflow-y-auto px-xl text-center"
+      >
         <h2 style={titleStyle}>{current.title}</h2>
         {step === 0 ? <CircleExample /> : null}
         {step === 1 ? <CheckInExample /> : null}
@@ -215,9 +218,9 @@ function CheckInExample() {
 }
 
 const cardTitleStyle = { ...type.label, fontSize: 19, color: color.textPrimary };
-const cardChipStyle = { ...type.caption, fontSize: 14, color: color.amber };
+const cardChipStyle = { ...type.caption, fontSize: 14, color: color.amberText };
 const cardActionTextStyle = { ...type.label, fontSize: 17, color: color.textPrimary };
-const cardActionPrimaryTextStyle = { ...type.label, fontSize: 17, color: color.bg, fontWeight: 600 as const };
+const cardActionPrimaryTextStyle = { ...type.label, fontSize: 17, color: color.ink, fontWeight: 600 as const };
 
 /** A static mock of the Care Card someone sees for a friend who's Heavy or
  * In the Pit — same layout and copy as the real component, just with

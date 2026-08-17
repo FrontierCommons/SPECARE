@@ -25,7 +25,7 @@ interface Props {
 const titleStyle = { ...type.heading, color: color.textPrimary };
 const bodyStyle = { ...type.body, color: color.textSecondary };
 const cancelTextStyle = { ...type.label, color: color.textSecondary };
-const confirmTextStyle = { ...type.label, color: color.bg, fontWeight: 600 as const };
+const confirmTextStyle = { ...type.label, color: color.ink, fontWeight: 600 as const };
 const inputStyle = { ...type.body, color: color.textPrimary };
 
 /**

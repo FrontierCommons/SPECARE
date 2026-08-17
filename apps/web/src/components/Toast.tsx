@@ -1,6 +1,6 @@
 import { color, type } from '../design/tokens';
 
-const textStyle = { ...type.label, color: color.bg, fontWeight: 700 as const };
+const textStyle = { ...type.label, color: color.ink, fontWeight: 700 as const };
 
 /**
  * A brief in-app notification that slides down from the top and springs

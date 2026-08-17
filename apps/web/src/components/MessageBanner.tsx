@@ -11,9 +11,12 @@ interface Props {
   receiving?: boolean;
 }
 
-const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sage };
-const bodyStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight: 400 as const, color: color.textOption };
-const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloom };
+const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.sageText };
+// textPrimary, not textOption — this sits on the card's own `color.bg`
+// (theme-dependent), not on a fixed vivid fill, so it needs to track the
+// same dark/light flip as the page around it.
+const bodyStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight: 400 as const, color: color.textPrimary };
+const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloomText };
 
 /**
  * The in-app replacement for the old off-app "Send a message" deep link —

@@ -27,8 +27,8 @@ export function StateBadge({ state, selected, onPress, compact }: Props) {
         compact ? 'px-sm py-xs' : 'px-md py-sm'
       }`}
     >
-      <span style={{ fontSize: 18, color: selected ? color.bg : v.color }}>{v.icon}</span>
-      {!compact && <span style={{ ...labelStyle, color: selected ? color.bg : color.textPrimary }}>{v.label}</span>}
+      <span style={{ fontSize: 18, color: selected ? color.ink : v.color }}>{v.icon}</span>
+      {!compact && <span style={{ ...labelStyle, color: selected ? color.ink : color.textPrimary }}>{v.label}</span>}
     </div>
   );
 
