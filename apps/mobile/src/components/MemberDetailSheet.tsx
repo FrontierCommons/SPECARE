@@ -1,13 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, View, Text, Pressable, ScrollView, Modal, StyleSheet } from 'react-native';
-import type { CareCardDTO, SperEntryDTO, TouchpointType } from '@sper/shared-types';
+import type { CareCardDTO, SperEntryDTO, TouchpointDTO, TouchpointType } from '@sper/shared-types';
 import { Avatar } from './Avatar';
 import { CareCard } from './CareCard';
+import { ShareCard } from './ShareCard';
 import { SelfCareTree } from './SelfCareTree';
 import { StateBadge } from './StateBadge';
 import { Touchable } from './Touchable';
 import { DIMENSIONS, dimState, aggregateState } from '../lib/checkinState';
 import { relativeTime } from '../lib/time';
+import { fromCareCard } from '../lib/shareable';
 import { color, elevation, motion, radius, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
@@ -16,9 +18,25 @@ interface Props {
   careCard?: CareCardDTO;
   /** True when the viewer is looking at their own check-in. */
   isSelf?: boolean;
+  /** Names of people who've reached out (any touchpoint type) for this
+   * check-in — feeds the Care Card's "already reached out" line. */
   alreadyReached?: string[];
+  /** Touchpoints of any kind, for the self-view tree's care count. */
+  touchpointCount?: number;
+  /** Same touchpoints `touchpointCount` was derived from — feeds the
+   * promoted ShareCard's "N people have reached out" relative timestamp. */
+  touchpoints?: TouchpointDTO[];
+  /** The viewer's own touchpoint type(s) already logged for this check-in —
+   * drives the promoted ShareCard's "You [action] X!" title. */
+  actionTypes?: TouchpointType[];
+  /** When the viewer's most recent action above was logged — shown as a
+   * small "X ago" under the promoted ShareCard's title. */
+  actionAt?: string | null;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+  onSendMessage: (body: string) => Promise<void>;
+  onToggleLike?: () => void;
+  likePending?: boolean;
   onClose: () => void;
 }
 
@@ -33,12 +51,24 @@ export function MemberDetailSheet({
   careCard,
   isSelf,
   alreadyReached,
+  touchpointCount,
+  touchpoints,
+  actionTypes,
+  actionAt,
   onLogCare,
   onSendVoiceNote,
+  onSendMessage,
+  onToggleLike,
+  likePending,
   onClose,
 }: Props) {
   const agg = entry ? aggregateState(entry) : null;
   const isOpen = !!entry;
+  const reached = alreadyReached?.includes('You') ?? false;
+  const reachedAt = (touchpoints ?? []).reduce<string | null>(
+    (latest, t) => (!latest || t.created_at > latest ? t.created_at : latest),
+    null,
+  );
   const translateY = useRef(new Animated.Value(24)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -94,16 +124,28 @@ export function MemberDetailSheet({
 
             {isSelf ? (
               <View style={styles.careWrap}>
-                <SelfCareTree entry={entry} count={alreadyReached?.length ?? 0} />
+                <SelfCareTree entry={entry} count={touchpointCount ?? 0} />
               </View>
             ) : careCard && (agg === 'Heavy' || agg === 'In the Pit') ? (
               <View style={styles.careWrap}>
-                <CareCard
-                  card={careCard}
-                  onLogCare={onLogCare}
-                  onSendVoiceNote={onSendVoiceNote}
-                  alreadyReached={alreadyReached}
-                />
+                {reached ? (
+                  <ShareCard
+                    card={fromCareCard(careCard, { actionTypes, actionAt, reachedNames: alreadyReached, reachedAt })}
+                    isSelf={false}
+                    entry={entry}
+                    onToggleLike={onToggleLike}
+                    likePending={likePending}
+                  />
+                ) : (
+                  <CareCard
+                    card={careCard}
+                    entry={entry}
+                    onLogCare={onLogCare}
+                    onSendVoiceNote={onSendVoiceNote}
+                    onSendMessage={onSendMessage}
+                    alreadyReached={alreadyReached}
+                  />
+                )}
               </View>
             ) : null}
           </ScrollView>

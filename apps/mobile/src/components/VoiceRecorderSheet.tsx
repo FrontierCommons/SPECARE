@@ -3,6 +3,8 @@ import { Modal, View, Text, Pressable, ActivityIndicator, StyleSheet } from 'rea
 import {
   useAudioRecorder,
   useAudioRecorderState,
+  useAudioPlayer,
+  useAudioPlayerStatus,
   RecordingPresets,
   AudioModule,
   setAudioModeAsync,
@@ -24,8 +26,8 @@ type Phase = 'idle' | 'recording' | 'review' | 'sending';
 
 /**
  * Records up to 30s in-app and hands the result to `onSend` as base64 — no
- * external app, no deep link. Deliberately skips a playback preview before
- * sending (fewer moving parts); a bad take is a re-record, not a listen-back.
+ * external app, no deep link. The review step lets the sender listen back
+ * before sending, mirroring `VoiceNoteBanner`'s receive-side playback.
  */
 export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   // HIGH_QUALITY, not LOW_QUALITY: LOW_QUALITY records AMR-NB in a .3gp
@@ -39,6 +41,30 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const [finalDurationMs, setFinalDurationMs] = useState(0);
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // The recorder's own `uri` is already a real local file:// URI — no
+  // cache-file round-trip needed here (unlike VoiceNoteBanner's receive side,
+  // which has to write the incoming base64 payload out first).
+  const previewPlayer = useAudioPlayer(phase === 'review' ? recordedUri : null);
+  const previewStatus = useAudioPlayerStatus(previewPlayer);
+
+  const togglePreview = async () => {
+    if (!recordedUri) return;
+    try {
+      if (previewStatus.playing) {
+        previewPlayer.pause();
+        return;
+      }
+      const atEnd =
+        previewStatus.didJustFinish ||
+        (previewStatus.duration > 0 && previewStatus.currentTime >= previewStatus.duration - 0.05);
+      if (atEnd) await previewPlayer.seekTo(0);
+      previewPlayer.play();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[VoiceRecorderSheet] failed to toggle preview playback', err);
+    }
+  };
 
   useEffect(() => {
     if (!visible) {
@@ -151,6 +177,16 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
         {phase === 'review' ? (
           <>
             <Text style={styles.timer}>{timeLabel}</Text>
+            <Touchable
+              onPress={() => void togglePreview()}
+              accessibilityRole="button"
+              accessibilityLabel={previewStatus.playing ? strings.care.voiceNotePause : strings.care.voiceNotePlay}
+            >
+              <View style={styles.previewButton}>
+                <Text style={styles.previewGlyph}>{previewStatus.playing ? '❙❙' : '▶'}</Text>
+              </View>
+            </Touchable>
+            <Text style={styles.hint}>{strings.care.recordPreviewHint}</Text>
             <View style={styles.reviewActions}>
               <Action label={strings.care.recordRerecord} onPress={discard} />
               <Action label={strings.care.recordSend} onPress={send} primary />
@@ -220,6 +256,15 @@ const styles = StyleSheet.create({
   recordButtonActive: { backgroundColor: color.stateHeavy },
   recordDot: { width: 24, height: 24, borderRadius: 12, backgroundColor: color.bg },
   stopSquare: { width: 22, height: 22, borderRadius: 4, backgroundColor: color.bg },
+  previewButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: color.sage,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewGlyph: { color: color.bg, fontSize: 16, fontWeight: '700' },
   reviewActions: { flexDirection: 'row', gap: space.md },
   actionBtn: {
     borderRadius: radius.md,

@@ -25,6 +25,7 @@ export function OnboardingStack() {
   if (step === 'join') {
     return (
       <JoinOrCreateScreen
+        showSkip
         onJoined={(id) => {
           setCircleId(id);
           setStep('pact');

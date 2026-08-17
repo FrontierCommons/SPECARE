@@ -5,7 +5,7 @@ import { nextCheckInCountdown } from '../lib/time';
 import { strings } from '../design/strings';
 import { color, space, type as typeTokens } from '../design/tokens';
 
-const TICK_MS = 30_000;
+const TICK_MS = 1_000;
 
 /** Live "time until your next check-in" line, shown once today's is in. */
 export function NextCheckInCountdown({

@@ -13,16 +13,35 @@ interface SessionState {
   circles: MyCircleDTO[];
   /** True once we've asked the server which circle (if any) this user has. */
   circlesReady: boolean;
+  /** Null while the local flag is still loading; RootNavigator waits on that before deciding whether to show the tutorial. */
+  tutorialSeen: boolean | null;
+  /** Persists the flag and flips the in-memory value in the same tick, so RootNavigator reacts immediately instead of racing a storage re-read. */
+  markTutorialSeen: () => Promise<void>;
+  /** True once this member has explicitly chosen "I'll do later" on the
+   * join/create screen, or has left their last remaining circle — either
+   * way, RootNavigator stops forcing them through onboarding while
+   * circle-less and lets them browse the app (Today shows an empty/no-circle
+   * state instead). Null while the local flag is still loading. */
+  onboardingDeferred: boolean | null;
+  markOnboardingDeferred: () => Promise<void>;
   setUser: (u: UserDTO | null) => void;
   setActiveCircle: (id: string | null) => void;
-  /** Re-fetch the member's circle list — call after joining or leaving one. */
-  refreshCircles: () => Promise<void>;
+  /** Re-fetch the member's circle list — call after joining or leaving one.
+   * Resolves the freshly-fetched list (null if the fetch failed), so a
+   * caller can act on "did that leave me with zero circles" without a
+   * second round trip. */
+  refreshCircles: () => Promise<MyCircleDTO[] | null>;
   signOut: () => Promise<void>;
   /** Deletes the account server-side, then clears local state exactly like signOut. */
   deleteAccount: () => Promise<void>;
 }
 
 const CIRCLE_KEY = 'sper.activeCircle';
+// Keyed per-account (not a single shared key) so a new sign-up on the same
+// device still gets the tutorial — seeing it once shouldn't stick to the
+// device forever if that device later creates a second account.
+const tutorialKey = (userId: string) => `sper.tutorialSeen.${userId}`;
+const onboardingDeferredKey = (userId: string) => `sper.onboardingDeferred.${userId}`;
 const SessionContext = createContext<SessionState | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -32,6 +51,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [pendingCircleId, setPendingCircleId] = useState<string | null>(null);
   const [circles, setCircles] = useState<MyCircleDTO[]>([]);
   const [circlesReady, setCirclesReady] = useState(false);
+  const [tutorialSeen, setTutorialSeen] = useState<boolean | null>(null);
+  const [onboardingDeferred, setOnboardingDeferred] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,12 +69,58 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  // Re-checked whenever the signed-in account changes — signing out and
+  // creating a second account on the same device must not inherit the first
+  // account's "already seen" flag.
+  useEffect(() => {
+    if (!user) {
+      setTutorialSeen(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const seen = (await AsyncStorage.getItem(tutorialKey(user.id))) != null;
+      if (!cancelled) setTutorialSeen(seen);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const markTutorialSeen = useCallback(async () => {
+    if (!user) return;
+    setTutorialSeen(true); // flip immediately so RootNavigator's branch doesn't race the storage write
+    await AsyncStorage.setItem(tutorialKey(user.id), '1');
+  }, [user]);
+
+  // Same load-once-per-account pattern as tutorialSeen above.
+  useEffect(() => {
+    if (!user) {
+      setOnboardingDeferred(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const deferred = (await AsyncStorage.getItem(onboardingDeferredKey(user.id))) != null;
+      if (!cancelled) setOnboardingDeferred(deferred);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const markOnboardingDeferred = useCallback(async () => {
+    if (!user) return;
+    setOnboardingDeferred(true); // flip immediately, same race-avoidance as markTutorialSeen
+    await AsyncStorage.setItem(onboardingDeferredKey(user.id), '1');
+  }, [user]);
+
   // Fetches this user's full circle list and picks which one is active.
   // A previously-selected circle (persisted locally) wins as long as it's
   // still one the user has agreed the pact for — this is what lets a member
   // belong to several circles and have their last-viewed one stick across
   // sessions instead of always snapping back to the most recently joined.
-  const loadCircles = useCallback(async () => {
+  const loadCircles = useCallback(async (): Promise<MyCircleDTO[] | null> => {
     try {
       const list = await api.myCircles();
       setCircles(list);
@@ -75,11 +142,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setPendingCircleId(null);
         void AsyncStorage.removeItem(CIRCLE_KEY);
       }
+      return list;
     } catch {
       // Offline or the request failed — fall back to the last known circle
       // rather than forcing onboarding just because we couldn't reach the API.
       const stored = await AsyncStorage.getItem(CIRCLE_KEY);
       if (stored) setActiveCircleId(stored);
+      return null;
     }
   }, []);
 
@@ -141,6 +210,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         pendingCircleId,
         circles,
         circlesReady,
+        tutorialSeen,
+        markTutorialSeen,
+        onboardingDeferred,
+        markOnboardingDeferred,
         setUser,
         setActiveCircle,
         refreshCircles: loadCircles,

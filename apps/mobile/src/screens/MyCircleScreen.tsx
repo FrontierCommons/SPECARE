@@ -9,12 +9,16 @@ import { JoinOrCreateScreen } from './onboarding/JoinOrCreateScreen';
 import { CirclePactScreen } from './onboarding/CirclePactScreen';
 import { color, elevation, radius, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { humanizeTimezone } from '../lib/timezones';
 
 type JoinStep = 'closed' | 'join' | 'pact';
 
 export function MyCircleScreen({ onBack, onLeft }: { onBack: () => void; onLeft: () => void }) {
-  const { activeCircleId, setActiveCircle, circles, refreshCircles } = useSession();
-  const circleId = activeCircleId!;
+  const { activeCircleId, setActiveCircle, circles, refreshCircles, markOnboardingDeferred } = useSession();
+  // Empty when circle-less (deferred onboarding, or just left the only
+  // circle) — useMembers below no-ops on an empty id, and the reduced view
+  // further down shows just a "create a new circle" CTA instead.
+  const circleId = activeCircleId ?? '';
   const members = useMembers(circleId);
   const invite = useCreateInvite(circleId);
   const [code, setCode] = useState<string | null>(null);
@@ -39,7 +43,11 @@ export function MyCircleScreen({ onBack, onLeft }: { onBack: () => void; onLeft:
     // member already agreed to, or null if that was their last) rather than
     // forcing null and dropping them into onboarding while they still belong
     // to other circles.
-    await refreshCircles();
+    const remaining = await refreshCircles();
+    // Leaving your only circle shouldn't force a re-onboarding loop — treat
+    // it the same as an explicit "I'll do later" so the app lets you browse
+    // circle-less instead.
+    if (remaining !== null && remaining.length === 0) await markOnboardingDeferred();
     onLeft();
   };
 
@@ -73,6 +81,25 @@ export function MyCircleScreen({ onBack, onLeft }: { onBack: () => void; onLeft:
           setJoiningCircleId(null);
         }}
       />
+    );
+  }
+
+  if (!activeCircleId) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <Touchable onPress={onBack} accessibilityRole="button">
+            <Text style={styles.link}>‹ Back</Text>
+          </Touchable>
+          <Text style={styles.title}>{strings.circle.title}</Text>
+          <View style={{ width: 44 }} />
+        </View>
+        <View style={styles.emptyWrap}>
+          <Touchable style={styles.inviteBtn} onPress={() => setJoinStep('join')} accessibilityRole="button">
+            <Text style={styles.inviteText}>{strings.circle.createNewCircle}</Text>
+          </Touchable>
+        </View>
+      </View>
     );
   }
 
@@ -130,7 +157,7 @@ export function MyCircleScreen({ onBack, onLeft }: { onBack: () => void; onLeft:
             <Avatar name={m.name} avatarUrl={m.avatar_url} size={40} />
             <View>
               <Text style={styles.memberName}>{m.name}</Text>
-              <Text style={styles.memberTz}>{m.timezone}</Text>
+              <Text style={styles.memberTz}>{humanizeTimezone(m.timezone)}</Text>
             </View>
           </View>
           <Text style={[styles.pact, { color: m.covenant_agreed ? color.sage : color.textMuted }]}>
@@ -149,6 +176,7 @@ export function MyCircleScreen({ onBack, onLeft }: { onBack: () => void; onLeft:
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.bg },
   content: { padding: space.lg, gap: space.md },
+  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.title, color: color.textPrimary },
   link: { ...type.label, color: color.sage, width: 44 },
@@ -193,7 +221,7 @@ const styles = StyleSheet.create({
   memberTz: { ...type.caption, color: color.textMuted },
   pact: { ...type.caption },
   leave: { padding: space.md, alignItems: 'center', marginTop: space.lg },
-  leaveText: { ...type.label, color: color.statePit },
+  leaveText: { ...type.label, color: color.textPrimary },
 });
 
 export default MyCircleScreen;

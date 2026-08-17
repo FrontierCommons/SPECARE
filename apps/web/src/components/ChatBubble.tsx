@@ -21,7 +21,10 @@ export function ChatBubble({
 }: {
   from: 'bot' | 'user';
   text: string;
-  /** Overrides the default bubble background — used to echo the state color of a user's answer. */
+  /** Overrides the default bubble background — used to echo the state
+   * color/gradient of a user's answer. Accepts a plain color or a CSS
+   * `background` value (e.g. a gradient), since it's set via `background`
+   * rather than `backgroundColor` below. */
   bubbleColor?: string;
   /** Short, known-length text (a picked answer, not free prose) that must
    * stay on one line — drops the 82%-width cap too, since a wrapped-off
@@ -44,7 +47,7 @@ export function ChatBubble({
         className={`rounded-lg px-md py-sm ${nowrap ? 'max-w-full' : 'max-w-[82%]'} ${
           from === 'bot' ? 'rounded-bl-sm bg-surface' : 'rounded-br-sm bg-sage'
         }`}
-        style={from === 'user' && bubbleColor ? { backgroundColor: bubbleColor } : undefined}
+        style={from === 'user' && bubbleColor ? { background: bubbleColor } : undefined}
       >
         <span
           style={from === 'user' ? userTextStyle : botTextStyle}

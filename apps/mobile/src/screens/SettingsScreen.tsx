@@ -6,7 +6,10 @@ import { useUpdateProfile } from '../api/hooks';
 import { Avatar } from '../components/Avatar';
 import { Touchable } from '../components/Touchable';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { TutorialModal } from '../components/TutorialModal';
 import { pickAndResizeAvatar } from '../lib/resizeImage';
+import { humanizeTimezone } from '../lib/timezones';
+import { nextPromptAt, formatPromptTime } from '../lib/time';
 import { color, elevation, radius, space, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
@@ -25,6 +28,7 @@ export function SettingsScreen() {
   const { user, setUser, signOut, deleteAccount } = useSession();
   const updateProfile = useUpdateProfile();
   const [showPact, setShowPact] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [pendingFrequency, setPendingFrequency] = useState<CheckInFrequency | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -130,7 +134,7 @@ export function SettingsScreen() {
       <View style={styles.section}>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>{strings.settings.timezone}</Text>
-          <Text style={styles.rowValue}>{user.timezone}</Text>
+          <Text style={styles.rowValue}>{humanizeTimezone(user.timezone)}</Text>
         </View>
       </View>
 
@@ -153,6 +157,11 @@ export function SettingsScreen() {
             );
           })}
         </View>
+        <Text style={styles.nextReminder}>
+          {strings.settings.nextReminder(
+            formatPromptTime(nextPromptAt(user.last_checkin_at ?? user.created_at, user.checkin_frequency)),
+          )}
+        </Text>
       </View>
 
       <Touchable style={styles.linkRow} onPress={() => setShowPact((v) => !v)} accessibilityRole="button">
@@ -164,6 +173,10 @@ export function SettingsScreen() {
           <Text style={styles.pactText}>{strings.pact.body}</Text>
         </View>
       ) : null}
+
+      <Touchable style={styles.linkRow} onPress={() => setShowTutorial(true)} accessibilityRole="button">
+        <Text style={styles.linkText}>{strings.settings.tutorial}</Text>
+      </Touchable>
 
       <Touchable style={styles.signOut} onPress={signOut} accessibilityRole="button">
         <Text style={styles.signOutText}>{strings.settings.signOut}</Text>
@@ -210,6 +223,10 @@ export function SettingsScreen() {
         onConfirm={confirmDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      {showTutorial ? (
+        <TutorialModal onSkip={() => setShowTutorial(false)} onFinish={() => setShowTutorial(false)} />
+      ) : null}
     </ScrollView>
   );
 }
@@ -251,6 +268,7 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: color.surfaceRaised, borderColor: color.sage },
   segmentText: { ...type.caption, color: color.textSecondary, textAlign: 'center' },
   segmentTextActive: { color: color.sage, fontWeight: '600' },
+  nextReminder: { ...type.caption, color: color.textMuted, marginTop: space.sm },
   linkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -267,7 +285,7 @@ const styles = StyleSheet.create({
   },
   pactText: { ...type.body, color: color.textSecondary },
   signOut: { padding: space.md, alignItems: 'center', marginTop: space.lg },
-  signOutText: { ...type.label, color: color.statePit },
+  signOutText: { ...type.label, color: color.textPrimary },
   deleteAccount: { padding: space.md, alignItems: 'center' },
   deleteAccountText: { ...type.label, color: color.destructive, fontWeight: '600' },
   version: { ...type.caption, color: color.textMuted, textAlign: 'center' },

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { api, ApiError } from '../../api/client';
 import { Touchable } from '../../components/Touchable';
+import { useSession } from '../../state/session';
 import { color, radius, space, type } from '../../design/tokens';
 import { strings } from '../../design/strings';
 
@@ -9,8 +10,19 @@ import { strings } from '../../design/strings';
  * Fork in onboarding: create a circle (become its first member) or join an
  * existing one with a code. On success we hand the circle id up so the Pact
  * screen can gate entry.
+ *
+ * `showSkip` is only true for the top-level onboarding flow — a member
+ * already reaching this screen to join a second circle (from My Circle)
+ * has nothing to "defer."
  */
-export function JoinOrCreateScreen({ onJoined }: { onJoined: (circleId: string) => void }) {
+export function JoinOrCreateScreen({
+  onJoined,
+  showSkip,
+}: {
+  onJoined: (circleId: string) => void;
+  showSkip?: boolean;
+}) {
+  const { markOnboardingDeferred } = useSession();
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [circleName, setCircleName] = useState('');
   const [code, setCode] = useState('');
@@ -35,6 +47,11 @@ export function JoinOrCreateScreen({ onJoined }: { onJoined: (circleId: string) 
 
   return (
     <View style={styles.container}>
+      {showSkip ? (
+        <Touchable style={styles.skip} onPress={() => void markOnboardingDeferred()} accessibilityRole="button">
+          <Text style={styles.skipText}>{strings.onboarding.doLater}</Text>
+        </Touchable>
+      ) : null}
       <Text style={styles.title}>{strings.onboarding.joinTitle}</Text>
       <Text style={styles.body}>{strings.onboarding.joinBody}</Text>
 
@@ -89,6 +106,8 @@ function Tab({ label, active, onPress }: { label: string; active: boolean; onPre
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: color.bg, padding: space.lg, justifyContent: 'center', gap: space.md },
+  skip: { position: 'absolute', top: space.lg, right: space.lg, padding: space.xs },
+  skipText: { ...type.label, color: color.textMuted },
   title: { ...type.title, color: color.textPrimary },
   body: { ...type.body, color: color.textSecondary },
   tabs: { flexDirection: 'row', gap: space.sm, marginVertical: space.sm },

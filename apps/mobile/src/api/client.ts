@@ -19,6 +19,10 @@ import type {
   UserDTO,
   VoiceNoteDTO,
   SendVoiceNoteRequest,
+  ShareCardDTO,
+  ToggleLikeResponse,
+  SendMessageRequest,
+  InAppMessageDTO,
 } from '@sper/shared-types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
@@ -178,6 +182,10 @@ export const api = {
     raw<{ sper: SperEntryDTO[] }>(`/circles/${circleId}/sper`).then((r) => r.sper),
   careCards: (circleId: string) =>
     raw<{ care_cards: CareCardDTO[] }>(`/circles/${circleId}/care-cards`).then((r) => r.care_cards),
+  shareCards: (circleId: string) =>
+    raw<{ share_cards: ShareCardDTO[] }>(`/circles/${circleId}/share-cards`).then((r) => r.share_cards),
+  toggleLike: (checkinId: string) =>
+    raw<ToggleLikeResponse>(`/checkins/${checkinId}/like`, { method: 'POST' }),
 
   // Touchpoints
   logTouchpoint: (checkinId: string, body: LogTouchpointRequest) =>
@@ -204,6 +212,19 @@ export const api = {
     ),
   markVoiceNoteReceived: (checkinId: string, noteId: string) =>
     raw<{ ok: boolean }>(`/checkins/${checkinId}/voice-notes/${noteId}/received`, {
+      method: 'POST',
+    }),
+
+  // In-app messages
+  sendMessage: (checkinId: string, body: SendMessageRequest) =>
+    raw<{ message: InAppMessageDTO }>(`/checkins/${checkinId}/messages`, {
+      method: 'POST',
+      body,
+    }).then((r) => r.message),
+  messages: (checkinId: string) =>
+    raw<{ messages: InAppMessageDTO[] }>(`/checkins/${checkinId}/messages`).then((r) => r.messages),
+  markMessageReceived: (checkinId: string, messageId: string) =>
+    raw<{ ok: boolean }>(`/checkins/${checkinId}/messages/${messageId}/received`, {
       method: 'POST',
     }),
 

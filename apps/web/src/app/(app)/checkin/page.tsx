@@ -201,7 +201,7 @@ export default function CheckInPage() {
               from="user"
               nowrap={!explanations[dim]}
               text={explanations[dim] ?? strings.checkIn.answerOption(dim, sel[dim]!).label}
-              bubbleColor={stateVisual[sel[dim]!].color}
+              bubbleColor={stateVisual[sel[dim]!].gradient}
             />
           </Fragment>
         ))}
@@ -218,8 +218,8 @@ export default function CheckInPage() {
                       key={level}
                       onClick={() => answer(DIMENSIONS[step]!, level)}
                       aria-label={opt.label}
-                      className={`flex items-center gap-sm rounded-md px-md py-sm ${PRESSABLE}`}
-                      style={{ backgroundColor: stateVisual[level].color }}
+                      className={`flex items-center gap-sm rounded-md px-md py-sm shadow-sm ${PRESSABLE}`}
+                      style={{ background: stateVisual[level].gradient }}
                     >
                       <span style={{ fontSize: 20 }}>{opt.icon}</span>
                       <span style={optionLabelStyle} className="whitespace-nowrap">

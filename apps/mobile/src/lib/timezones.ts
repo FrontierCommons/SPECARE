@@ -39,10 +39,18 @@ export const TIMEZONES: TimezoneOption[] = [
   { value: 'Pacific/Auckland', label: 'Auckland' },
 ];
 
+/** IANA zone id "America/Argentina/Buenos_Aires" -> "Buenos Aires" — for
+ * anywhere a raw `user.timezone`/`member.timezone` gets displayed directly,
+ * so it never shows the raw id's underscores/slashes to the user. */
+export function humanizeTimezone(tz: string): string {
+  const city = tz.split('/').pop() ?? tz;
+  return city.replace(/_/g, ' ');
+}
+
 /** The curated list, plus `current` prepended if it isn't already in it. */
 export function timezoneOptions(current: string): TimezoneOption[] {
   if (TIMEZONES.some((z) => z.value === current)) return TIMEZONES;
-  return [{ value: current, label: current }, ...TIMEZONES];
+  return [{ value: current, label: humanizeTimezone(current) }, ...TIMEZONES];
 }
 
 export function labelForTimezone(value: string, options: TimezoneOption[]): string {

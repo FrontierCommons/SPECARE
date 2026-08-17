@@ -28,7 +28,9 @@ export function MainSwitcher() {
           <MyCircleScreen onBack={() => setDest('today')} onLeft={() => setDest('today')} />
         )}
         {dest === 'settings' && <SettingsScreen />}
-        {dest === 'today' && <SperDashboardScreen onCheckIn={() => setDest('checkin')} />}
+        {dest === 'today' && (
+          <SperDashboardScreen onCheckIn={() => setDest('checkin')} onCreateOrJoin={() => setDest('circle')} />
+        )}
       </View>
       <TabBar active={dest} onChange={setDest} />
     </View>

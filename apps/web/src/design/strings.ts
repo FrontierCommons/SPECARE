@@ -378,7 +378,7 @@ export const strings = {
     answerOption(dim: CheckInDimension, level: StateLevel): AnswerOption {
       return todaysVariant(dim).options[level];
     },
-    explainOption: { icon: '💬', label: 'I want to clarify' },
+    explainOption: { icon: '💬', label: 'I want to be specific' },
     explainIntro: 'Share what you have on your mind (if comfortable)',
     explainPlaceholder: 'What’s going on? (Optional)',
     explainLevelPrompt: 'Where on the scale are you feeling in this area?',

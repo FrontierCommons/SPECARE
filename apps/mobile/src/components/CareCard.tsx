@@ -1,34 +1,55 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import type { CareCardDTO, TouchpointType } from '@sper/shared-types';
-import { color, elevation, radius, space, type } from '../design/tokens';
+import type { CareCardDTO, CheckInDimension, SperEntryDTO, TouchpointType } from '@sper/shared-types';
+import { color, elevation, radius, space, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
+import { DIMENSIONS, dimState } from '../lib/checkinState';
+import { parseCheckInNote } from '../lib/checkinNote';
+import { pickEncourageVerse } from '../lib/encourageVerses';
 import { ResponderGuidanceBox } from './ResponderGuidanceBox';
 import { Touchable } from './Touchable';
 import { VoiceRecorderSheet } from './VoiceRecorderSheet';
-import { openMessage, outreachPrefill } from '../lib/deeplink';
+import { MessageComposerSheet } from './MessageComposerSheet';
 
 interface Props {
   card: CareCardDTO;
+  /** The flagged member's own check-in entry — lets each dimension pill show
+   * what they actually answered, not just which part of life it was. */
+  entry?: SperEntryDTO | null;
   onLogCare: (type: TouchpointType) => void;
   onSendVoiceNote: (input: { audioBase64: string; mimeType: string; durationMs: number }) => Promise<void>;
+  onSendMessage: (body: string) => Promise<void>;
   alreadyReached?: string[]; // responder names
 }
 
 /**
  * The responder's view when a friend has flagged distress. Leads with the
- * person, not the data; every action is off-app, a quiet log, or — for the
- * voice note — a real in-app recording sent straight to them.
+ * person, not the data; every action is off-app, a quiet log, or an
+ * in-app send.
+ *
+ * Once the viewer has cared for the flagged part, the caller (the dashboard
+ * screen) stops rendering this card at all and promotes its non-distress
+ * notes into a ShareCard instead — so everything here assumes the viewer
+ * hasn't acted yet, and stays purely informational + collapsed for anything
+ * not flagged.
  */
-export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: Props) {
-  const prefill = outreachPrefill(card.target_name);
+export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessage, alreadyReached }: Props) {
   const selfReached = alreadyReached?.includes('You') ?? false;
   const [recorderVisible, setRecorderVisible] = useState(false);
-
-  const sendMsg = async () => {
-    const opened = await openMessage(prefill);
-    if (opened) onLogCare('TextSent');
-  };
+  const [composerVisible, setComposerVisible] = useState(false);
+  // Collapsed by default — these aren't part of what needs a response, so
+  // they shouldn't compete for attention with the actions below.
+  const [showOtherNotes, setShowOtherNotes] = useState(false);
+  // Per-dimension "I'd rather explain" text was tagged by dimension name when
+  // it was saved, so it can be shown as that dimension's own answer instead
+  // of a separate note; whatever's left over is genuinely untagged context.
+  const { perDimension, general } = parseCheckInNote(card.optional_note);
+  // An explained dimension that isn't Heavy/In the Pit never made it into
+  // flagged_dimensions (the server only flags distress) — it still deserves
+  // to be shown, just without implying it needs any of the actions below.
+  const flaggedSet = new Set(card.flagged_dimensions);
+  const explainedButNotFlagged = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
+  const hasOtherNotes = explainedButNotFlagged.length > 0 || !!general;
 
   if (card.gratitude_shown) {
     return (
@@ -43,26 +64,64 @@ export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: P
       <Text style={styles.title}>{strings.care.cardTitle(card.target_name)}</Text>
 
       <View style={styles.dims}>
-        {card.flagged_dimensions.map((d) => (
-          <View key={d} style={styles.dimChip}>
-            <Text style={styles.dimText}>{labelFor(d)}</Text>
-          </View>
-        ))}
+        {card.flagged_dimensions.map((d) => {
+          const dim = d as CheckInDimension;
+          const level = entry ? dimState(entry, dim) : null;
+          const answer = perDimension[dim] ?? (level ? strings.checkIn.answerOption(dim, level).label : null);
+          const stateColor = level ? stateVisual[level].color : null;
+          return (
+            <View
+              key={d}
+              style={[
+                styles.dimChip,
+                { backgroundColor: stateColor ?? color.surfaceRaised, borderColor: stateColor ?? color.amber },
+              ]}
+            >
+              <Text style={styles.dimText}>
+                {strings.checkIn.dimensions[dim]}
+                {answer ? `: ${answer}` : ''}
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
-      {card.optional_note ? <Text style={styles.note}>“{card.optional_note}”</Text> : null}
+      {hasOtherNotes ? (
+        <View style={styles.otherNotes}>
+          <Touchable
+            onPress={() => setShowOtherNotes((v) => !v)}
+            accessibilityRole="button"
+            style={styles.otherNotesToggle}
+          >
+            <Text style={styles.toggleText}>{strings.care.otherNotes}</Text>
+            <Text style={styles.toggleText}>{showOtherNotes ? '︿' : '﹀'}</Text>
+          </Touchable>
+          {showOtherNotes ? (
+            <View style={{ gap: space.sm }}>
+              {explainedButNotFlagged.map((dim) => (
+                <Text key={dim} style={styles.neutralAnswer}>
+                  {strings.checkIn.dimensions[dim]}: {perDimension[dim]}
+                </Text>
+              ))}
+              {general ? <Text style={styles.note}>{general}</Text> : null}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {!selfReached ? (
         <>
-          {card.verse ? <Text style={styles.verse}>{card.verse}</Text> : null}
           <ResponderGuidanceBox />
           <View style={styles.actions}>
             <Action label={strings.care.sendVoiceNote} onPress={() => setRecorderVisible(true)} primary />
-            <Action label={strings.care.sendMessage} onPress={sendMsg} />
+            <Action label={strings.care.sendMessage} onPress={() => setComposerVisible(true)} />
+            <Action label={strings.care.call} onPress={() => onLogCare('CallMade')} />
             <Action label={strings.care.pray} onPress={() => onLogCare('PrayedFor')} />
           </View>
         </>
       ) : null}
+
+      {!selfReached ? <Text style={styles.verse}>{pickEncourageVerse(card.checkin_id)}</Text> : null}
 
       {alreadyReached && alreadyReached.length > 0 ? (
         <Text style={[styles.reached, selfReached && styles.reachedSelf]}>
@@ -75,6 +134,11 @@ export function CareCard({ card, onLogCare, onSendVoiceNote, alreadyReached }: P
         visible={recorderVisible}
         onClose={() => setRecorderVisible(false)}
         onSend={onSendVoiceNote}
+      />
+      <MessageComposerSheet
+        visible={composerVisible}
+        onClose={() => setComposerVisible(false)}
+        onSend={onSendMessage}
       />
     </View>
   );
@@ -93,17 +157,6 @@ function Action({ label, onPress, primary }: { label: string; onPress: () => voi
   );
 }
 
-function labelFor(dim: string): string {
-  const map: Record<string, string> = {
-    spiritual: 'Spiritual',
-    physical: 'Physical',
-    emotional: 'Emotional',
-    vocational: 'Career / Life',
-    relational: 'Relational',
-  };
-  return map[dim] ?? dim;
-}
-
 const styles = StyleSheet.create({
   card: {
     backgroundColor: color.surface,
@@ -117,14 +170,18 @@ const styles = StyleSheet.create({
   title: { ...type.title, color: color.textPrimary },
   dims: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   dimChip: {
-    backgroundColor: color.surfaceRaised,
     borderRadius: radius.pill,
     paddingVertical: space.xs,
     paddingHorizontal: space.md,
+    borderWidth: 1,
   },
-  dimText: { ...type.caption, color: color.amber },
-  note: { ...type.body, color: color.textPrimary, fontStyle: 'italic' },
-  verse: { ...type.caption, color: color.sage },
+  dimText: { ...type.caption, color: color.bg, fontWeight: '600' },
+  otherNotes: { gap: space.sm },
+  otherNotesToggle: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start' },
+  toggleText: { ...type.label, color: color.sage },
+  neutralAnswer: { ...type.caption, color: color.textSecondary },
+  note: { ...type.caption, color: color.amber },
+  verse: { ...type.body, fontSize: 15, color: color.sage },
   actions: { gap: space.sm },
   action: {
     borderRadius: radius.md,

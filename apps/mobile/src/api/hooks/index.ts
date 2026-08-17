@@ -6,14 +6,17 @@ import type {
   SubmitCheckInRequest,
   UpdateProfileRequest,
   SendVoiceNoteRequest,
+  SendMessageRequest,
 } from '@sper/shared-types';
 
 export const keys = {
   sper: (circleId: string) => ['sper', circleId] as const,
   careCards: (circleId: string) => ['careCards', circleId] as const,
+  shareCards: (circleId: string) => ['shareCards', circleId] as const,
   members: (circleId: string) => ['members', circleId] as const,
   touchpoints: (checkinId: string) => ['touchpoints', checkinId] as const,
   voiceNotes: (checkinId: string) => ['voiceNotes', checkinId] as const,
+  messages: (checkinId: string) => ['messages', checkinId] as const,
   me: ['me'] as const,
 };
 
@@ -32,6 +35,30 @@ export function useCareCards(circleId: string) {
     queryFn: () => api.careCards(circleId),
     enabled: !!circleId,
     staleTime: 30_000,
+    // Polled so a new like/gratitude from someone else's device shows up
+    // without the viewer having to pull-to-refresh — mobile has no push yet.
+    refetchInterval: 15_000,
+  });
+}
+
+export function useShareCards(circleId: string) {
+  return useQuery({
+    queryKey: keys.shareCards(circleId),
+    queryFn: () => api.shareCards(circleId),
+    enabled: !!circleId,
+    staleTime: 30_000,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useToggleLike(circleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (checkinId: string) => api.toggleLike(checkinId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
+      qc.invalidateQueries({ queryKey: keys.shareCards(circleId) });
+    },
   });
 }
 
@@ -83,6 +110,36 @@ export function useMarkVoiceNoteReceived(checkinId: string) {
     mutationFn: (noteId: string) => api.markVoiceNoteReceived(checkinId, noteId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.voiceNotes(checkinId) });
+    },
+  });
+}
+
+export function useMessages(checkinId: string) {
+  return useQuery({
+    queryKey: keys.messages(checkinId),
+    queryFn: () => api.messages(checkinId),
+    enabled: !!checkinId,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useSendMessage(circleId: string, checkinId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SendMessageRequest) => api.sendMessage(checkinId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.touchpoints(checkinId) });
+      qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
+    },
+  });
+}
+
+export function useMarkMessageReceived(checkinId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => api.markMessageReceived(checkinId, messageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.messages(checkinId) });
     },
   });
 }

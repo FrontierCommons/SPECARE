@@ -23,11 +23,15 @@ export const color = {
   sageDeep: '#5F7A5C',
   amber: '#c7a923', // muted amber — warmth, not alarm
 
-  // State colors — weather, not a scoreboard.
-  stateThriving: '#8FA98C', // clear sky (sage)
-  stateSteady: '#7FA6B8', // calm blue
-  stateHeavy: '#C99A6A', // overcast amber
-  statePit: '#A8748C', // muted storm plum (never a harsh red)
+  // State colors — weather, not a scoreboard. Tuned for even saturation
+  // across all four (the old set ranged from 54% down to a nearly-grey 13%
+  // on statePit, which read as "dull" next to the richer green/blue) while
+  // keeping lightness in the same band so contrast against dark fill-text
+  // doesn't shift. Kept in sync by hand with apps/web/src/design/tokens.ts.
+  stateThriving: '#349B27', // clear sky (sage)
+  stateSteady: '#2D9ED2', // calm blue
+  stateHeavy: '#D89446', // overcast amber
+  statePit: '#9456B3', // muted storm plum (never a harsh red)
 
   // Warmth accent — reserved for encouragement: the one place the app should
   // feel like a hug, not a status readout.

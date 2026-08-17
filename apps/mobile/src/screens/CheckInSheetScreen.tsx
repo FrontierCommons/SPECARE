@@ -12,17 +12,21 @@ import { Touchable } from '../components/Touchable';
 import { ChatBubble } from '../components/ChatBubble';
 import { NextCheckInCountdown } from '../components/NextCheckInCountdown';
 import { StateBadge } from '../components/StateBadge';
-import { DIMENSIONS, dimState } from '../lib/checkinState';
+import { LevelSlider } from '../components/LevelSlider';
+import { DIMENSIONS, dimState, levelForScore } from '../lib/checkinState';
+import { buildCheckInNote } from '../lib/checkinNote';
 import { relativeTime } from '../lib/time';
 import { enqueueCheckIn } from '../lib/offlineQueue';
 import { color, elevation, radius, space, stateVisual, type } from '../design/tokens';
 import { strings } from '../design/strings';
 
 type Selections = Partial<Record<CheckInDimension, StateLevel>>;
+type Explanations = Partial<Record<CheckInDimension, string>>;
 
 // Steps: 0..4 = one per dimension question, 5 = optional note, 6 = sent.
 const NOTE_STEP = DIMENSIONS.length;
 const DONE_STEP = DIMENSIONS.length + 1;
+const EXPLAIN_MAX_LENGTH = 300;
 
 /**
  * Defaults to showing today's result, not re-prompting a fresh check-in every
@@ -40,10 +44,17 @@ export function CheckInSheetScreen({
   onComplete: () => void;
 }) {
   const { activeCircleId, user } = useSession();
-  const circleId = activeCircleId!;
+  // Empty when circle-less — useSper/useSubmitCheckIn below both no-op on an
+  // empty id; the early return further down shows the no-circle message.
+  const circleId = activeCircleId ?? '';
   const sper = useSper(circleId);
   const submit = useSubmitCheckIn(circleId);
   const [sel, setSel] = useState<Selections>({});
+  const [explanations, setExplanations] = useState<Explanations>({});
+  const [explaining, setExplaining] = useState(false);
+  const [explainText, setExplainText] = useState('');
+  const [explainScore, setExplainScore] = useState<number | null>(null);
+  const explainLevel = explainScore !== null ? levelForScore(explainScore) : null;
   const [step, setStep] = useState(0);
   const [note, setNote] = useState('');
   const [updating, setUpdating] = useState(false);
@@ -54,6 +65,14 @@ export function CheckInSheetScreen({
     [sper.data, user],
   );
   const hasResult = !!myEntry?.checkin_id;
+
+  if (!activeCircleId) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <Text style={styles.dimLabel}>{strings.checkIn.noCircle}</Text>
+      </View>
+    );
+  }
 
   if (sper.isLoading) {
     return (
@@ -69,6 +88,10 @@ export function CheckInSheetScreen({
         entry={myEntry!}
         onUpdate={() => {
           setSel({});
+          setExplanations({});
+          setExplaining(false);
+          setExplainText('');
+          setExplainScore(null);
           setStep(0);
           setNote('');
           setUpdating(true);
@@ -83,7 +106,36 @@ export function CheckInSheetScreen({
     setStep((s) => s + 1);
   };
 
+  const beginExplain = () => {
+    setExplainText('');
+    setExplainScore(null);
+    setExplaining(true);
+  };
+
+  const cancelExplain = () => {
+    setExplaining(false);
+    setExplainText('');
+    setExplainScore(null);
+  };
+
+  const sendExplain = () => {
+    if (!explainLevel) return;
+    const dim = DIMENSIONS[step]!;
+    const trimmed = explainText.trim();
+    setSel((s) => ({ ...s, [dim]: explainLevel }));
+    if (trimmed) setExplanations((e) => ({ ...e, [dim]: trimmed }));
+    setExplaining(false);
+    setExplainText('');
+    setExplainScore(null);
+    setStep((s) => s + 1);
+  };
+
   const finish = async (finalNote: string) => {
+    // Per-dimension explanations ride along in the same free-text note the
+    // circle already sees — no separate field, so each is tagged with which
+    // part of life it was about (CareCard parses the tags back out to show
+    // each explanation as that dimension's own answer).
+    const combinedNote = buildCheckInNote(explanations, finalNote);
     const payload = {
       circle_id: circleId,
       spiritual_state: sel.spiritual!,
@@ -91,7 +143,7 @@ export function CheckInSheetScreen({
       emotional_state: sel.emotional!,
       vocational_state: sel.vocational!,
       relational_state: sel.relational!,
-      ...(finalNote.trim() ? { optional_note: finalNote.trim() } : {}),
+      ...(combinedNote ? { optional_note: combinedNote } : {}),
     };
     try {
       await submit.mutateAsync(payload);
@@ -130,10 +182,10 @@ export function CheckInSheetScreen({
 
         {DIMENSIONS.slice(0, step).map((dim) => (
           <React.Fragment key={dim}>
-            <ChatBubble from="bot" text={strings.checkIn.botQuestions[dim]} />
+            <ChatBubble from="bot" text={strings.checkIn.botQuestion(dim)} />
             <ChatBubble
               from="user"
-              text={strings.checkIn.answerLabels[dim][sel[dim]!]}
+              text={explanations[dim] ?? strings.checkIn.answerOption(dim, sel[dim]!).label}
               bubbleColor={stateVisual[sel[dim]!].color}
             />
           </React.Fragment>
@@ -141,32 +193,77 @@ export function CheckInSheetScreen({
 
         {step < NOTE_STEP ? (
           <>
-            <ChatBubble from="bot" text={strings.checkIn.botQuestions[DIMENSIONS[step]!]} />
-            <View style={styles.options}>
-              {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
-                const v = stateVisual[level];
-                const label = strings.checkIn.answerLabels[DIMENSIONS[step]!][level];
-                return (
-                  <Touchable
-                    key={level}
-                    onPress={() => answer(DIMENSIONS[step]!, level)}
-                    style={[styles.option, { backgroundColor: v.color }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={label}
-                  >
-                    <Text style={[styles.optionIcon, { color: color.bg }]}>{v.icon}</Text>
-                    <Text
-                      style={[styles.optionLabel, { color: color.bg }]}
-                      numberOfLines={2}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.75}
+            <ChatBubble from="bot" text={strings.checkIn.botQuestion(DIMENSIONS[step]!)} />
+            {!explaining ? (
+              <View style={styles.options}>
+                {(STATE_LEVELS as readonly StateLevel[]).map((level) => {
+                  const v = stateVisual[level];
+                  const opt = strings.checkIn.answerOption(DIMENSIONS[step]!, level);
+                  return (
+                    <Touchable
+                      key={level}
+                      onPress={() => answer(DIMENSIONS[step]!, level)}
+                      style={[styles.option, { backgroundColor: v.color }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={opt.label}
                     >
-                      {label}
-                    </Text>
+                      <Text style={[styles.optionIcon, { color: color.bg }]}>{opt.icon}</Text>
+                      <Text
+                        style={[styles.optionLabel, { color: color.bg }]}
+                        numberOfLines={2}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.75}
+                      >
+                        {opt.label}
+                      </Text>
+                    </Touchable>
+                  );
+                })}
+                <Touchable
+                  onPress={beginExplain}
+                  style={styles.explainOption}
+                  accessibilityRole="button"
+                  accessibilityLabel={strings.checkIn.explainOption.label}
+                >
+                  <Text style={styles.explainOptionIcon}>{strings.checkIn.explainOption.icon}</Text>
+                  <Text style={styles.explainOptionLabel}>{strings.checkIn.explainOption.label}</Text>
+                </Touchable>
+              </View>
+            ) : (
+              <View style={styles.explainBox}>
+                <Text style={styles.explainPrompt}>{strings.checkIn.explainIntro}</Text>
+                <TextInput
+                  style={styles.explainInput}
+                  value={explainText}
+                  onChangeText={(t) => setExplainText(t.slice(0, EXPLAIN_MAX_LENGTH))}
+                  placeholder={strings.checkIn.explainPlaceholder}
+                  placeholderTextColor={color.textMuted}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={EXPLAIN_MAX_LENGTH}
+                  autoFocus
+                />
+                <Text style={styles.explainPrompt}>{strings.checkIn.explainLevelPrompt}</Text>
+                <LevelSlider value={explainScore} onChange={setExplainScore} />
+                <View style={styles.explainActions}>
+                  <Touchable
+                    style={styles.explainCancelBtn}
+                    onPress={cancelExplain}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.composerSkip}>{strings.checkIn.explainCancel}</Text>
                   </Touchable>
-                );
-              })}
-            </View>
+                  <Touchable
+                    style={[styles.explainSendBtn, !explainLevel && styles.explainSendBtnDisabled]}
+                    onPress={sendExplain}
+                    disabled={!explainLevel}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.composerSendText}>{strings.checkIn.send}</Text>
+                  </Touchable>
+                </View>
+              </View>
+            )}
           </>
         ) : null}
 
@@ -279,9 +376,10 @@ const styles = StyleSheet.create({
   closeGlyph: { ...type.heading, color: color.textMuted, padding: space.xs },
   transcript: { flex: 1 },
   transcriptContent: { gap: space.sm, paddingVertical: space.sm },
-  options: { flexDirection: 'row', gap: space.xs, marginTop: space.xs },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.xs },
   option: {
-    flex: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
     minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -296,6 +394,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
+  explainOption: {
+    flexBasis: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surfaceRaised,
+  },
+  explainOptionIcon: { fontSize: 20 },
+  explainOptionLabel: { ...type.label, fontWeight: '600', color: color.textPrimary },
+  explainBox: { gap: space.sm, marginTop: space.xs },
+  explainPrompt: { ...type.caption, color: color.textMuted },
+  explainInput: {
+    backgroundColor: color.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    padding: space.md,
+    color: color.textPrimary,
+    ...type.body,
+    fontSize: 15,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+  explainActions: { flexDirection: 'row', gap: space.sm },
+  explainCancelBtn: {
+    flex: 1,
+    paddingVertical: space.sm,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+  },
+  explainSendBtn: {
+    flex: 1,
+    paddingVertical: space.sm,
+    alignItems: 'center',
+    borderRadius: radius.md,
+    backgroundColor: color.sage,
+  },
+  explainSendBtnDisabled: { opacity: 0.5 },
   composer: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
   composerInput: {
     flex: 1,

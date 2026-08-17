@@ -1,4 +1,4 @@
-import { Linking, Platform } from 'react-native';
+import { Linking } from 'react-native';
 
 /**
  * The off-app bridge. These build the URLs that hand a responder to their own
@@ -17,14 +17,6 @@ export async function openWhatsApp(text: string, phone?: string): Promise<boolea
   return tryOpen(url);
 }
 
-export async function openMessage(text: string, phone?: string): Promise<boolean> {
-  // iMessage/SMS share the sms: scheme; body param differs slightly by platform.
-  const sep = Platform.OS === 'ios' ? '&' : '?';
-  const base = phone ? `sms:${phone}` : 'sms:';
-  const url = `${base}${sep}body=${encode(text)}`;
-  return tryOpen(url);
-}
-
 export async function openCall(phone: string): Promise<boolean> {
   return tryOpen(`tel:${phone}`);
 }
@@ -38,9 +30,4 @@ async function tryOpen(url: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/** Suggested pre-fill for reaching out, kept short and warm. */
-export function outreachPrefill(friendName: string): string {
-  return `Hey ${friendName}, thinking of you — no need to reply, just wanted you to know I’m here.`;
 }

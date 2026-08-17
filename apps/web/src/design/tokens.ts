@@ -57,12 +57,41 @@ export const color = {
 
 export const stateVisual: Record<
   StateLevel,
-  { color: string; icon: string; label: string }
+  {
+    color: string;
+    icon: string;
+    label: string;
+    /** Same hue family as `color`, just lighter→darker within it — used for
+     * the check-in flow's own option buttons, where a bit of depth reads as
+     * more inviting than a flat fill. Everywhere else (rings, badges, pills)
+     * keeps the plain `color` fill, so this stays scoped to that one moment. */
+    gradient: string;
+  }
 > = {
-  Thriving: { color: color.stateThriving, icon: '🌳', label: 'Thriving' },
-  Steady: { color: color.stateSteady, icon: '🌿', label: 'Steady' },
-  Heavy: { color: color.stateHeavy, icon: '🍂', label: 'Heavy' },
-  'In the Pit': { color: color.statePit, icon: '🌱', label: 'In the Pit' },
+  Thriving: {
+    color: color.stateThriving,
+    gradient: 'linear-gradient(135deg, #5CC244 0%, #2C7F22 100%)',
+    icon: '🌳',
+    label: 'Thriving',
+  },
+  Steady: {
+    color: color.stateSteady,
+    gradient: 'linear-gradient(135deg, #57BBEA 0%, #1F7FAE 100%)',
+    icon: '🌿',
+    label: 'Steady',
+  },
+  Heavy: {
+    color: color.stateHeavy,
+    gradient: 'linear-gradient(135deg, #E7B06C 0%, #BD7830 100%)',
+    icon: '🍂',
+    label: 'Heavy',
+  },
+  'In the Pit': {
+    color: color.statePit,
+    gradient: 'linear-gradient(135deg, #B172CE 0%, #7A3D93 100%)',
+    icon: '🌱',
+    label: 'In the Pit',
+  },
 };
 
 export const space = {
