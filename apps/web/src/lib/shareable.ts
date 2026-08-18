@@ -71,11 +71,18 @@ export function fromCareCard(
   };
 }
 
-/** True if there's at least one Thriving/Steady per-dimension note to show
- * — the same check ShareCard uses to decide whether to render at all, hoisted
- * up so callers can bucket/section a list before ever mounting the card. */
+/** True if there's at least one Thriving/Steady per-dimension note to show,
+ * OR a general end-of-checkin note on a check-in with nothing flagged — the
+ * same check ShareCard uses to decide whether to render at all, hoisted up
+ * so callers can bucket/section a list before ever mounting the card.
+ *
+ * The general note only counts when flagged_dimensions is empty: that free
+ * text could be about anything, including a distressed dimension the
+ * member didn't tag — safe to show alongside everyone else's positive notes
+ * only once we know this check-in had nothing flagged at all. */
 export function hasShareableContent(card: ShareableNote): boolean {
-  const { perDimension } = parseCheckInNote(card.optional_note);
+  const { perDimension, general } = parseCheckInNote(card.optional_note);
   const flaggedSet = new Set(card.flagged_dimensions);
+  if (flaggedSet.size === 0 && general) return true;
   return DIMENSIONS.some((dim) => perDimension[dim] && !flaggedSet.has(dim));
 }

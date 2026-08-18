@@ -409,7 +409,7 @@ export const strings = {
     acked: (name: string) => `${name} stepped up to hold space for you today.`,
     thankYou: 'Thank you!',
     gratitudeSent: 'You thanked everyone who reached out.',
-    gratitudeReceived: (name: string) => `${name} wants to show gratitude for your care!`,
+    gratitudeReceived: (name: string) => `${name} thanked you for your care!`,
     selfTitle: 'You could use some care',
     treeTitle: 'Your tree today',
     thrivingCaption: 'Growing steady — thanks for checking in.',

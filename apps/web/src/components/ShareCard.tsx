@@ -13,6 +13,7 @@ import { PRESSABLE } from '../design/interaction';
 
 const titleStyle = { ...type.title, fontSize: type.title.fontSize - 3, color: color.textPrimary};
 const dimTextStyle = { ...type.caption, fontWeight: 600 as const, color: color.textPrimary };
+const generalNoteStyle = { ...type.body, fontSize: 16, color: color.textPrimary };
 const actionTimeStyle = { ...type.caption, fontSize: 12, color: color.textMuted };
 const reachedCountStyle = { ...type.caption, fontSize: 12, color: color.sageText };
 const likeCountStyle = { ...type.label, fontWeight: 600 as const, color: color.textPrimary };
@@ -43,21 +44,24 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
   const [showReachedDetail, setShowReachedDetail] = useState(false);
 
   // Only the Thriving/Steady per-dimension answers ever show here — never
-  // the flagged (Heavy/In the Pit) dimension's own note, and never the
-  // untagged general note either, since that's free text that could be
-  // about anything, including the distressed part.
-  const { perDimension } = parseCheckInNote(card.optional_note);
+  // the flagged (Heavy/In the Pit) dimension's own note. The untagged
+  // general note is different: it's free text that could be about anything,
+  // including a distressed dimension the member didn't tag, so it only
+  // shows here when flagged_dimensions is empty — nothing on this check-in
+  // was flagged at all, so there's nothing it could be quietly hiding.
+  const { perDimension, general } = parseCheckInNote(card.optional_note);
   const flaggedSet = new Set(card.flagged_dimensions);
   const notedDimensions = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
+  const showGeneral = flaggedSet.size === 0 && !!general;
 
   // A promoted Care Card (the viewer already acted on the flagged part)
   // shows up here even with nothing positive to share — the confirmation
   // itself ("You prayed for X!") is the content, and the ONLY content: no
   // notes, no like button, just the caption. A pure share needs at least
-  // one Thriving/Steady note to be worth showing at all.
+  // one Thriving/Steady note or a general note to be worth showing at all.
   const actionTypes = card.actionTypes ?? [];
   const isPromotedAction = actionTypes.length > 0;
-  if (notedDimensions.length === 0 && !isPromotedAction) return null;
+  if (notedDimensions.length === 0 && !showGeneral && !isPromotedAction) return null;
 
   if (isPromotedAction) {
     const title = strings.care.youActionedFor(
@@ -116,6 +120,8 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
           </span>
         );
       })}
+
+      {showGeneral ? <p style={generalNoteStyle}>{general}</p> : null}
 
       {isSelf ? (
         <span className="flex w-fit items-center gap-xs">

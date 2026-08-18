@@ -73,8 +73,8 @@ export function CareCard({
   if (card.gratitude_shown) {
     return (
       <div
-        className="self-center rounded-lg border px-lg py-md shadow-md"
-        style={{ backgroundColor: color.bloomSoft, borderColor: color.bloom, maxWidth: 420 }}
+        className="w-full rounded-lg border px-lg py-md shadow-md"
+        style={{ backgroundColor: color.bloomSoft, borderColor: color.bloom }}
       >
         <p style={gratitudeStyle} className="text-center">
           {strings.care.gratitudeReceived(card.target_name)}
