@@ -123,6 +123,7 @@ export default function TodayPage() {
       queryFn: () => api.touchpoints(card.checkin_id),
       enabled: !!card.checkin_id,
       refetchInterval: 15_000,
+      refetchIntervalInBackground: true,
     })),
   });
 

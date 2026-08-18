@@ -26,11 +26,16 @@ export function useSper(circleId: string) {
     queryFn: () => api.sper(circleId),
     enabled: !!circleId,
     staleTime: 30_000,
-    // Polled while visible so another member's check-in shows up on this
-    // viewer's dashboard without them having to do anything. Also refetch on
-    // window focus (overriding the app-wide default) so tabbing back in
-    // shows fresh state immediately instead of waiting out the interval.
+    // Polled so another member's check-in shows up on this viewer's
+    // dashboard without them having to do anything. `refetchInterval`
+    // defaults to pausing while the tab is unfocused/backgrounded — turned
+    // back on below, since two circle members are routinely two separate
+    // browser windows, and the one not currently focused shouldn't just
+    // stop updating. Also refetch on window focus (overriding the app-wide
+    // default) so tabbing back in shows fresh state immediately rather than
+    // waiting out the interval.
     refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
 }
@@ -41,10 +46,12 @@ export function useCareCards(circleId: string) {
     queryFn: () => api.careCards(circleId),
     enabled: !!circleId,
     staleTime: 30_000,
-    // Polled while visible so someone else's touchpoint ("I prayed for you")
-    // or a "thank you" lands on this viewer's care cards without a manual
-    // refresh — mirrors useTouchpoints below. Also refetch on window focus.
+    // Polled so someone else's touchpoint ("I prayed for you") or a "thank
+    // you" lands on this viewer's care cards without a manual refresh —
+    // mirrors useTouchpoints below. See useSper above for why background
+    // polling stays on and window-focus refetch is forced on.
     refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
 }
@@ -55,9 +62,11 @@ export function useShareCards(circleId: string) {
     queryFn: () => api.shareCards(circleId),
     enabled: !!circleId,
     staleTime: 30_000,
-    // Mirrors useCareCards: polled while visible so a new like (or a fresh
-    // share from someone else) shows up without a manual refresh.
+    // Mirrors useCareCards: polled (background included, see useSper above)
+    // so a new like or a fresh share from someone else shows up without a
+    // manual refresh.
     refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
   });
 }
@@ -86,9 +95,11 @@ export function useTouchpoints(checkinId: string) {
     queryKey: keys.touchpoints(checkinId),
     queryFn: () => api.touchpoints(checkinId),
     enabled: !!checkinId,
-    // Polled while visible so a prayer from someone else's device shows up
-    // (and the tree updates) without the viewer having to do anything.
+    // Polled (background included — see useSper's comment) so a prayer from
+    // someone else's device shows up (and the tree updates) without the
+    // viewer having to do anything, even in a backgrounded browser tab.
     refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -103,6 +114,7 @@ export function useVoiceNotes(checkinId: string) {
     queryFn: () => api.voiceNotes(checkinId),
     enabled: !!checkinId,
     refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -135,6 +147,7 @@ export function useMessages(checkinId: string) {
     queryFn: () => api.messages(checkinId),
     enabled: !!checkinId,
     refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -166,6 +179,12 @@ export function useSubmitCheckIn(circleId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.sper(circleId) });
       qc.invalidateQueries({ queryKey: keys.careCards(circleId) });
+      // A new check-in replaces whatever ShareCard the submitter's previous
+      // one produced (only the latest counts) — without this, the old share
+      // note keeps showing until the next 15s poll happens to land, and the
+      // check-in flow redirects back to Today well before that (1.5s), so
+      // the stale note was guaranteed to still be there right after submit.
+      qc.invalidateQueries({ queryKey: keys.shareCards(circleId) });
     },
   });
 }
