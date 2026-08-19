@@ -1,6 +1,8 @@
-# SPER — Community Care App (API)
+# SPER — Community Care App
 
-Low-friction circle check-in backend. Modular monolith: Fastify + Drizzle + BullMQ on PostgreSQL + Redis.
+Low-friction circle check-in system. Modular-monolith API (Fastify + Drizzle +
+BullMQ on PostgreSQL + Redis) with two clients — a React Native/Expo mobile
+app and a full-parity Next.js web app — sharing one DTO/enum package.
 
 ## Layout
 
@@ -8,20 +10,28 @@ Low-friction circle check-in backend. Modular monolith: Fastify + Drizzle + Bull
 apps/api            Backend (Fastify, Drizzle, BullMQ)
   src/config        env validation + DB/Drizzle client
   src/db            schema.ts (source of truth) + migrations
-  src/modules       auth, users, circles, checkins, notifications, touchpoints
+  src/modules       auth, users, circles, checkins, touchpoints, messages,
+                     gratitude, voicenotes, notifications
   src/delivery      push (APNs/FCM) + email (SMTP) providers, notifier, DI wiring
-  src/workers       prompt-scheduler + grace-loop (BullMQ)
+  src/workers       prompt-scheduler + grace-loop + care-gap-loop (BullMQ)
   src/shared        errors, mappers, idempotency, middleware
   test              phase integration/e2e suites
 apps/mobile         React Native / Expo client
   src/design        tokens (palette, state visuals) + strings (voice)
   src/api           typed client + TanStack Query hooks
-  src/components     StateBadge, SperWidget, CareCard, GraceNudgeBanner, ...
-  src/screens        auth, onboarding (timezone/join/pact), 3 main destinations
+  src/components     StateBadge, SperWidget, CareCard, ShareCard, ...
+  src/screens        auth, onboarding (timezone/join/pact), main destinations
   src/navigation     RootNavigator, OnboardingStack, MainSwitcher
   src/lib            deeplink (WhatsApp/SMS bridge), offlineQueue
   src/state          session context
-packages/shared-types  enums + DTOs shared across apps (single source of truth)
+apps/web            Next.js client — full parity with apps/mobile
+  src/app           App Router pages: auth, onboarding, (app) tab group
+  src/api           typed client + TanStack Query hooks (same shape as mobile)
+  src/components     same component set/names as apps/mobile, web-rendered
+  src/lib           checkin/state helpers, offline queue, push (web push)
+  src/state          session + theme context
+  public/sw.js       service worker (web push)
+packages/shared-types  enums + DTOs shared across all three apps (single source of truth)
 ```
 
 ## Prerequisites
@@ -58,11 +68,17 @@ pnpm --filter @sper/api worker    # prompt-scheduler + grace-loop (separate proc
 
 ## API (base path `/api/v1`)
 - `POST /auth/register|login|magic-link|magic-link/verify|refresh`
-- `POST /circles`, `POST /circles/join`, `POST /circles/:id/invites`,
-  `POST /circles/:id/pact/agree`, `GET /circles/:id/members`, `POST /circles/:id/leave`
-- `POST /checkins`, `GET /circles/:id/sper`, `GET /circles/:id/care-cards`
-- `POST /checkins/:id/touchpoints`, `GET /checkins/:id/touchpoints`
-- `POST /devices`
+- `POST /auth/reset-password/request|confirm`
+- `GET /circles/mine`, `POST /circles`, `POST /circles/join`,
+  `POST /circles/:id/invites`, `POST /circles/:id/pact/agree`,
+  `GET /circles/:id/members`, `POST /circles/:id/leave`
+- `POST /checkins`, `POST /checkins/:id/like`, `GET /circles/:id/sper`,
+  `GET /circles/:id/care-cards`, `GET /circles/:id/share-cards`
+- `POST|GET /checkins/:id/touchpoints`
+- `POST|GET /checkins/:id/voice-notes`, `POST /checkins/:id/voice-notes/:noteId/received`
+- `POST|GET /checkins/:id/messages`, `POST /checkins/:id/messages/:messageId/received`
+- `POST /checkins/:id/gratitude`
+- `GET|DELETE /users/me`, `POST|DELETE /devices`
 
 ## Tests
 
@@ -82,23 +98,26 @@ misconfigure things later — against any `DATABASE_URL` whose database name
 doesn't contain "test", as a backstop against accidentally wiping dev data.
 
 ```bash
-# Backend (88 tests): services, delivery, workers, auth, HTTP e2e
+# Backend (134 tests): services, delivery, workers, auth, HTTP e2e
 pnpm --filter @sper/api test
 
-# Mobile (17 tests): deep-link builder, offline queue, API client + refresh
+# Mobile (15 tests): deep-link builder, offline queue, API client + refresh
 # Requires @sper/shared-types to be built first (see Setup) — its vitest
 # config resolves the package from dist/, not source.
 pnpm --filter @sper/mobile test
 ```
 
 Coverage: check-in core loop (distress detection, un-pause, atomicity, note
-boundary, lone-member), sper/care-cards, multi-responder touchpoints + ack
-routing, notifier push/email fallback + idempotency + dead-token pruning,
-circles/invites/pact (single-use codes, expiry, duplicate-join, unambiguous
-alphabet), auth (hashing, dup email, refresh rotation, magic link), workers
-(grace pause+nudge, timezone-correct prompt scheduling), and HTTP status/guard
-edges. Mobile covers the off-app bridge URLs, offline retention/retry, and the
-client's 401 auto-refresh.
+boundary, lone-member), sper/care-cards/share-cards + likes, multi-responder
+touchpoints + ack routing, messages, gratitude, voice notes, notifier
+push/email fallback + idempotency + dead-token pruning, circles/invites/pact
+(single-use codes, expiry, duplicate-join, unambiguous alphabet), auth
+(hashing, dup email, refresh rotation, magic link, password reset), workers
+(grace pause+nudge, care-gap nudges, timezone-correct prompt scheduling), and
+HTTP status/guard edges. Mobile covers the off-app bridge URLs, offline
+retention/retry, and the client's 401 auto-refresh.
+
+`apps/web` has no test suite yet — verify web changes manually (see below).
 
 ## Mobile (Expo)
 ```bash
@@ -122,4 +141,19 @@ To run on an Android emulator: `pnpm android` (or `expo start --android`)
 launches it via the currently-booted AVD. If you have multiple emulators
 running, target one explicitly with `ANDROID_SERIAL=<serial> pnpm android`
 (find serials with `adb devices`).
+
+## Web (Next.js)
+```bash
+pnpm --filter @sper/web dev     # http://localhost:3100
+```
+No `.env.example` yet — the client falls back to `http://localhost:3000/api/v1`
+when `NEXT_PUBLIC_API_URL` isn't set, which matches the default local API port.
+Set `NEXT_PUBLIC_API_URL` explicitly (e.g. in `apps/web/.env.local`) if the API
+is running elsewhere.
+
+Ported for full parity with `apps/mobile` — same screens, component names, and
+`@sper/shared-types` DTOs, so the two clients can't drift silently. Backend
+must be deployed/reachable before onboarding real (non-local) testers. Web
+push uses `public/sw.js`; there is no test suite here yet, so changes need
+manual verification in-browser.
 
