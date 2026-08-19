@@ -1,7 +1,7 @@
 /**
- * Encouraging verses attached to a distress notification.
- * Tone is comfort-and-presence, never corrective. This is a static pool;
- * a future phase may make it configurable per-circle.
+ * Encouraging verses attached to a distress notification — tone is
+ * comfort-and-presence, never corrective. Static for now; a future phase
+ * may make it configurable per-circle.
  */
 
 const VERSES: readonly string[] = [

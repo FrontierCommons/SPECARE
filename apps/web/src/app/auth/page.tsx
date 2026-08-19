@@ -42,12 +42,11 @@ export default function AuthPage() {
   const formRef = useRef<HTMLFormElement>(null);
 
   /**
-   * Reads a field straight off the DOM instead of trusting React state.
-   * Chrome/Edge's "suggest a strong password" autofill sometimes sets the
-   * input's value without firing a change event React can see, so state can
-   * go stale while the field visibly (and correctly) holds the generated
-   * password — submitting the stale state then fails backend validation.
-   * The live DOM value is always what's actually about to be submitted.
+   * Reads a field straight off the DOM rather than trusting React state:
+   * Chrome/Edge's password-suggestion autofill can set an input's value
+   * without firing a change event, leaving state stale while the field
+   * still (correctly) shows the generated password — and a stale submit
+   * fails backend validation.
    */
   const liveValue = (fieldName: string, fallback: string): string => {
     const el = formRef.current?.elements.namedItem(fieldName);
@@ -135,18 +134,12 @@ export default function AuthPage() {
         className="fixed inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/images/background2.avif')" }}
       />
-      {/* Scrim: transparent over the photo's left/top so it still reads as
-          a picture, deepening toward the bottom-right where the form sits —
-          the contrast that makes the card the obvious thing to look at,
-          on a phone-width screen just as much as a desktop one. Painting
-          order here comes from DOM order (photo, then scrim, then content)
-          rather than z-index — negative z-index on a fixed root-level
-          element ends up composited behind the canvas background in some
-          engines, which silently hid this whole layer. Mixed from
-          --color-bg rather than a hardcoded dark rgba so it deepens toward
-          whichever theme's card is actually sitting on top of it (near-black
-          in dark mode, warm cream in light mode) instead of always fading to
-          black behind a bright card. */}
+      {/* Scrim: deepens toward the bottom-right where the form sits, for
+          contrast on any viewport. Layered by DOM order, not z-index —
+          negative z-index on a fixed root element got composited behind the
+          canvas background in some engines and silently hid this layer.
+          color-mix() from --color-bg (not a hardcoded rgba) keeps it
+          theme-reactive instead of always fading to black. */}
       <div
         aria-hidden
         className="fixed inset-0"

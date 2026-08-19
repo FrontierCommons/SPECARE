@@ -22,14 +22,9 @@ export default defineConfig({
     include: ['test/**/*.test.ts'],
     setupFiles: ['test/setup.ts'],
     env: testEnv,
-    // DB tests share one Postgres; run serially in a single fork to avoid
-    // cross-test interference on truncation. singleFork alone only pins
-    // everything to one OS process — vitest still interleaves multiple
-    // test files' beforeAll hooks concurrently within it unless
-    // fileParallelism is also off, which matters once a migration is no
-    // longer purely additive (e.g. a DROP COLUMN each file's beforeAll
-    // replays): two files' hooks racing on it can leave one mid-statement
-    // against a schema another file just changed underneath it.
+    // Run serially (singleFork + fileParallelism off): all test files share one Postgres and
+    // truncate on every test. singleFork alone still lets vitest interleave beforeAll hooks
+    // across files, which races destructive migrations (e.g. DROP COLUMN) against each other.
     pool: 'forks',
     poolOptions: { forks: { singleFork: true } },
     fileParallelism: false,

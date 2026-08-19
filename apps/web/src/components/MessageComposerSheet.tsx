@@ -23,12 +23,11 @@ const errorStyle = { ...type.caption, color: color.destructive };
 const cancelStyle = { ...type.label, color: color.textMuted };
 
 /**
- * The in-app replacement for the old off-app "Send a message" deep link —
- * same visible/onClose/onSend contract as VoiceRecorderSheet, just a text
- * box instead of a recording flow. A small centered dialog (matching
- * ConfirmModal), not a full-width bottom sheet — nothing here needs the
- * extra room. Silently caps at MESSAGE_MAX_LENGTH rather than showing a
- * counter, matching the check-in explain box's convention.
+ * In-app replacement for the old off-app "Send a message" deep link — same
+ * contract as VoiceRecorderSheet, just a text box. A small centered dialog
+ * like ConfirmModal (no bottom sheet needed), and silently caps input at
+ * MESSAGE_MAX_LENGTH rather than showing a counter, matching the check-in
+ * explain box.
  */
 export function MessageComposerSheet({ visible, onClose, onSend }: Props) {
   const [phase, setPhase] = useState<Phase>('idle');

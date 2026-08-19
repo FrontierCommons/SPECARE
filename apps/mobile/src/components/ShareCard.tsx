@@ -24,30 +24,25 @@ interface Props {
 }
 
 /**
- * The circle's "someone wants to share something special" moment — either a
- * genuinely all-positive check-in, or the leftover non-distress notes on one
- * a viewer has already cared for. Nothing to act on here, just something to
- * notice and like.
+ * A "something good to notice" moment — either an all-positive check-in, or
+ * the leftover non-distress notes on one the viewer already cared for.
+ * Nothing to act on, just something to like.
  */
 export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Props) {
-  // Collapsed by default — who-and-exactly-when reads as pressure/comparison
-  // to whoever hasn't acted yet; here (already-responded) it's just a nice
-  // "you weren't the only one" detail worth an explicit tap to see.
+  // Collapsed by default — who-and-when can read as pressure/comparison
+  // elsewhere; here it's just a "you weren't the only one" detail worth a tap.
   const [showReachedDetail, setShowReachedDetail] = useState(false);
 
-  // Only the Thriving/Steady per-dimension answers ever show here — never
-  // the flagged (Heavy/In the Pit) dimension's own note, and never the
-  // untagged general note either, since that's free text that could be
-  // about anything, including the distressed part.
+  // Only Thriving/Steady per-dimension notes show here — never the flagged
+  // dimension's note, and never the untagged free-text note (it could be
+  // about the distressed part).
   const { perDimension } = parseCheckInNote(card.optional_note);
   const flaggedSet = new Set(card.flagged_dimensions);
   const notedDimensions = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
 
-  // A promoted Care Card (the viewer already acted on the flagged part)
-  // shows up here even with nothing positive to share — the confirmation
-  // itself ("You prayed for X!") is the content, and the ONLY content: no
-  // notes, no like button, just the caption. A pure share needs at least
-  // one Thriving/Steady note to be worth showing at all.
+  // A promoted Care Card (viewer already acted on the flagged part) shows
+  // up with no positive notes at all — the action confirmation is the whole
+  // point. A pure share, by contrast, needs at least one noted dimension.
   const actionTypes = card.actionTypes ?? [];
   const isPromotedAction = actionTypes.length > 0;
   if (notedDimensions.length === 0 && !isPromotedAction) return null;
@@ -83,9 +78,8 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
       <Text style={styles.title}>{title}</Text>
 
       {notedDimensions.map((dim) => {
-        // Filled with the state's own color, same treatment as CareCard's
-        // flagged-dimension pills — the pill should read as what was
-        // actually answered, not a fixed color regardless of the answer.
+        // Colored by the actual answer (same treatment as CareCard's
+        // flagged-dimension pills), not a fixed color regardless of state.
         const level = entry ? dimState(entry, dim) : null;
         const stateColor = level ? stateVisual[level].color : null;
         return (

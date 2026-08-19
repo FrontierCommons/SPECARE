@@ -3,11 +3,10 @@ import { Animated, View, Text, StyleSheet } from 'react-native';
 import { color, motion, radius, space, type } from '../design/tokens';
 
 /**
- * One message in the check-in "conversation" — bot on the left, the
- * member's own answers on the right. Keeps the five-question check-in
- * feeling like a quick chat rather than a form. Each bubble is a fresh
- * component instance when it's added to the transcript, so a mount-time
- * entrance is enough to animate every new message as it arrives.
+ * One message in the check-in "conversation" — bot on the left, member's
+ * answers on the right, so the five questions feel like a chat, not a form.
+ * Each bubble is a fresh component instance per message, so a mount-time
+ * animation alone is enough to animate every arrival.
  */
 export function ChatBubble({
   from,

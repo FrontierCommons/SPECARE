@@ -14,10 +14,9 @@ interface Props {
 }
 
 /**
- * One pending voice note waiting on the viewer's own check-in. The audio
- * arrives inline as base64 (see VoiceNoteDTO) — this writes it to a cache
- * file once so expo-audio has a real file:// uri to play from, and cleans
- * that file up when the note is acknowledged or the component unmounts.
+ * A pending voice note. Audio arrives as base64 (VoiceNoteDTO) — this writes
+ * it to a cache file so expo-audio has a real file:// uri, and deletes that
+ * file on unmount/acknowledgment.
  */
 export function VoiceNoteBanner({ note, onReceived, receiving }: Props) {
   const [localUri, setLocalUri] = useState<string | null>(null);

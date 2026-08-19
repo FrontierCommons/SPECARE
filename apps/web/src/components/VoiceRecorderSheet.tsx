@@ -42,14 +42,13 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 /**
  * Web port of apps/mobile/src/components/VoiceRecorderSheet.tsx. Same 30s-cap
- * record/send flow and no playback preview, but via the browser's
- * MediaRecorder instead of expo-audio — a genuinely different API, not a
- * literal port. Cross-platform note: this records whatever codec the browser
- * picks (webm/opus on Chrome & Firefox, mp4/aac on Safari) and sends the
- * real detected mime type; native apps' decoders may not support webm/opus,
- * same class of format risk the mobile fix addressed for Android vs iOS.
- * A small centered dialog (matching ConfirmModal/MessageComposerSheet), not a
- * full-width bottom sheet.
+ * record/preview/send flow, but via the browser's MediaRecorder instead of
+ * expo-audio — a genuinely different API, not a literal port. Sends whatever
+ * codec the browser actually picked (webm/opus on Chrome & Firefox, mp4/aac
+ * on Safari) rather than a hardcoded guess, since native apps' decoders may
+ * not support webm/opus — same class of format risk the mobile fix addressed
+ * for Android vs iOS. A small centered dialog (matching
+ * ConfirmModal/MessageComposerSheet), not a full-width bottom sheet.
  */
 export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const [phase, setPhase] = useState<Phase>('idle');

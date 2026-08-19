@@ -127,16 +127,12 @@ export class CheckInRepo {
   }
 
   /**
-   * Active Care Cards: for each member currently flagged Heavy/In the Pit on
-   * their latest non-expired check-in, the flagged dimensions, note, and the
-   * verse from the distress notification. Visible to any circle member.
+   * Active Care Cards: members currently flagged Heavy/In the Pit, with their
+   * flagged dimensions, note, and distress verse. Visible to any circle member.
    *
-   * Also layers in the caller's own gratitude state for each card: if the
-   * check-in's author has thanked them and this is the first fetch since,
-   * `gratitude_shown` fires once (and is recorded as seen right here) so the
-   * client can drop the card from the main dashboard afterward while
-   * `gratitude_received` stays true for as long as the card exists, for the
-   * detail view reached via the member's avatar.
+   * `gratitude_shown` fires once per thank-you (marked seen right here) so the
+   * dashboard can drop the card, while `gratitude_received` stays true for the
+   * detail view as long as the card exists.
    */
   async careCards(exec: Executor, circleId: string, callerId: string): Promise<CareCardDTO[]> {
     const active = await exec
@@ -215,12 +211,9 @@ export class CheckInRepo {
   }
 
   /**
-   * Active Share Cards: for each member's latest non-expired check-in that
-   * flags NO distress at all but still has a note worth surfacing (an
-   * "I'd rather explain" answer, or the general end-of-flow note), the
-   * circle's "someone wants to share something special" moment. Visible to
-   * any circle member; naturally stops existing once that check-in is no
-   * longer the member's latest (superseded by their next one).
+   * Active Share Cards: a member's latest check-in when it has no distress
+   * flags but still has a note worth surfacing. Visible to any circle member;
+   * disappears once a newer check-in supersedes it.
    */
   async shareCards(exec: Executor, circleId: string, callerId: string): Promise<ShareCardDTO[]> {
     const active = await exec

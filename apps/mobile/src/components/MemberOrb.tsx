@@ -23,8 +23,7 @@ const AVATAR_SIZE = SIZE - STROKE * 2 - 8;
  * One person in the circle: their avatar wrapped in a bold ring split into
  * five arcs, one per check-in dimension, each colored by that dimension's
  * latest weather state. At a glance the ring reads "mostly clear" or "storm
- * on one side" without a single number ever appearing. Tap for the full
- * picture.
+ * on one side" without a single number ever appearing.
  */
 export function MemberOrb({
   entry,

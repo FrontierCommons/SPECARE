@@ -32,12 +32,11 @@ const APP_HOME = '/today';
  * inserting itself, so it can't re-interrupt someone mid-setup just because
  * this device never recorded seeing it.
  *
- * "Deferred" (onboardingDeferred) covers two equivalent moments: the member
- * explicitly picked "I'll do later" on the join/create screen, or they left
- * their last remaining circle. Either way, once circle-less is a state they
- * chose rather than mid-setup, RootGate stops routing them through
- * onboarding and lets them into the app — Today renders its own "you're not
- * in a circle yet" empty state with a way back into /onboarding/join.
+ * "Deferred" (onboardingDeferred) covers two equivalent moments: explicitly
+ * picking "I'll do later", or leaving your last remaining circle. Either way,
+ * once circle-less is a state they chose rather than mid-setup, RootGate
+ * stops routing through onboarding — Today shows its own "you're not in a
+ * circle yet" empty state with a way back into /onboarding/join.
  */
 export function RootGate({ children }: { children: React.ReactNode }) {
   const { ready, user, activeCircleId, pendingCircleId, circlesReady, tutorialSeen, onboardingDeferred } =

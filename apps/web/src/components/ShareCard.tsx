@@ -43,22 +43,18 @@ export function ShareCard({ card, isSelf, entry, onToggleLike, likePending }: Pr
   // "you weren't the only one" detail worth an explicit hover/tap to see.
   const [showReachedDetail, setShowReachedDetail] = useState(false);
 
-  // Only the Thriving/Steady per-dimension answers ever show here — never
-  // the flagged (Heavy/In the Pit) dimension's own note. The untagged
-  // general note is different: it's free text that could be about anything,
-  // including a distressed dimension the member didn't tag, so it only
-  // shows here when flagged_dimensions is empty — nothing on this check-in
-  // was flagged at all, so there's nothing it could be quietly hiding.
+  // Only Thriving/Steady per-dimension answers show here — never a flagged
+  // dimension's note. The untagged general note is free text that could be
+  // hiding an untagged distress, so it only shows when nothing on this
+  // check-in was flagged at all.
   const { perDimension, general } = parseCheckInNote(card.optional_note);
   const flaggedSet = new Set(card.flagged_dimensions);
   const notedDimensions = DIMENSIONS.filter((dim) => perDimension[dim] && !flaggedSet.has(dim));
   const showGeneral = flaggedSet.size === 0 && !!general;
 
-  // A promoted Care Card (the viewer already acted on the flagged part)
-  // shows up here even with nothing positive to share — the confirmation
-  // itself ("You prayed for X!") is the content, and the ONLY content: no
-  // notes, no like button, just the caption. A pure share needs at least
-  // one Thriving/Steady note or a general note to be worth showing at all.
+  // A promoted Care Card (viewer already acted on the flagged part) shows up
+  // with just the "You prayed for X!" confirmation — no notes, no like
+  // button. A pure share instead needs at least one note to be worth showing.
   const actionTypes = card.actionTypes ?? [];
   const isPromotedAction = actionTypes.length > 0;
   if (notedDimensions.length === 0 && !showGeneral && !isPromotedAction) return null;

@@ -41,11 +41,8 @@ export class InviteService {
     };
   }
 
-  /**
-   * Resolve a redeemable invite from either a code or a link token (invite
-   * id). Not single-use — the same invite stays redeemable by anyone who has
-   * it until it expires, so multiple people can join off one shared code.
-   */
+  /** Resolve a redeemable invite from a code or a link token (invite id). Not
+   * single-use — anyone holding it can redeem it until it expires. */
   async resolveRedeemable(
     args: { code?: string; inviteToken?: string },
     exec: Executor = this.database,

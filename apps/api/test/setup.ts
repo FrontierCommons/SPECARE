@@ -42,12 +42,9 @@ beforeAll(async () => {
     .sort();
   for (const file of files) {
     const ddl = readFileSync(`${MIGRATIONS_DIR}/${file}`, 'utf8');
-    // Split on drizzle's statement breakpoints; ignore "already exists" (a
-    // CREATE/ADD replaying against an already-migrated DB) and "does not
-    // exist" (a DROP replaying after a later migration already removed the
-    // same thing) so the suite is idempotent across runs against a
-    // persistent test DB regardless of which direction a given migration's
-    // statements go.
+    // Split on drizzle's statement breakpoints. Ignore "already exists" (CREATE/ADD replayed
+    // against an already-migrated DB) and "does not exist" (DROP replayed after a later
+    // migration removed it) so reruns against a persistent test DB stay idempotent either way.
     const statements = ddl.split('--> statement-breakpoint');
     for (const stmt of statements) {
       const trimmed = stmt.trim();

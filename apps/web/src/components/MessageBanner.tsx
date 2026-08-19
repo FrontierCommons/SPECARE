@@ -19,13 +19,10 @@ const bodyStyle = { ...type.label, fontSize: type.label.fontSize + 1, fontWeight
 const thankYouTextStyle = { ...type.label, fontWeight: 600 as const, color: color.bloomText };
 
 /**
- * The in-app replacement for the old off-app "Send a message" deep link —
- * the recipient reads the message right here and says "Thank you" before it
- * moves out of their New tab. Same card shell as ShareCard ("the post") so a
- * message reads as part of the same family of things to notice, with the
- * thank-you action styled like a little note being handed back — the same
- * pill shape as LikeButton's reaction, just for a one-time "thanks" instead
- * of a toggleable like.
+ * In-app replacement for the old off-app "Send a message" deep link: read it
+ * here, tap "Thank you," and it leaves the New tab. Shares ShareCard's card
+ * shell and LikeButton's pill shape so it reads as the same family of things
+ * to notice — just a one-time thanks instead of a toggleable like.
  */
 export function MessageBanner({ message, onReceived, receiving }: Props) {
   return (

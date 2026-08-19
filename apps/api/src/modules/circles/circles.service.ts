@@ -63,12 +63,10 @@ export class CircleService {
   }
 
   /**
-   * Join via code or invite-link token. Not single-use — the same code
-   * stays good for anyone until it expires (env.INVITE_CODE_TTL_HOURS), so
-   * a whole group can join off one shared invite. In ONE transaction:
-   * resolve a redeemable invite and add the member, then notify existing
-   * members post-commit (FR #3). New members join with the pact un-agreed —
-   * they must accept it before accessing content.
+   * Join via code or invite-link token. Not single-use — the same code works
+   * for anyone until env.INVITE_CODE_TTL_HOURS expires, so a whole group can
+   * join off one shared invite. Notifies existing members post-commit (FR #3);
+   * new members join with the pact un-agreed.
    */
   async join(
     args: { code?: string; inviteToken?: string },

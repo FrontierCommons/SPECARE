@@ -21,13 +21,11 @@ interface Props {
 const STEPS = strings.tutorial.steps;
 
 /**
- * Four-step first-run walkthrough: the circle's dimension rings, the daily
- * check-in, the Care Card's states, and taking action to keep a tree green.
- * Each step pairs its explanation with a small non-interactive mockup built
- * from real building blocks (Avatar, ChatBubble, StateBadge) so it shows
- * what the feature actually looks like, not just a description of it.
- * Reused as-is from Settings ("View tutorial again") and from first sign-in
- * — only what happens on skip/finish differs, and that's left to the caller.
+ * Four-step first-run walkthrough (dimension rings, check-in, Care Card
+ * states, taking action). Each step's mockup reuses real components
+ * (Avatar, ChatBubble, StateBadge) so it shows the actual feature, not just
+ * a description. Reused from Settings and first sign-in — only skip/finish
+ * behavior differs, left to the caller.
  */
 export function TutorialModal({ onSkip, onFinish }: Props) {
   const [step, setStep] = useState(0);

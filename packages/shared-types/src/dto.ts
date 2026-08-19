@@ -210,13 +210,9 @@ export interface CareCardDTO {
   liked_by_me: boolean;
 }
 
-/**
- * Share Card: the circle's "someone wants to share something special"
- * moment — for a check-in with no distress at all, but at least one custom
- * note worth surfacing. Visible to all circle members; naturally disappears
- * once the author submits a newer check-in, same "only the latest counts"
- * rule as everything else Sper shows.
- */
+/** Shown when a check-in has no distress but includes a note worth surfacing.
+ * Visible to all members; disappears once the author submits a newer
+ * check-in — same "only the latest counts" rule as everything else Sper shows. */
 export interface ShareCardDTO {
   checkin_id: UUID;
   target_user_id: UUID;
@@ -255,11 +251,10 @@ export interface SendVoiceNoteRequest {
   duration_ms: number; // <= 30_000
 }
 
-/** Only ever returned to the check-in's own author — this is why it carries
- * the audio payload inline instead of a separate fetch-by-id step. Includes
- * both pending and already-thanked notes now (the client buckets by
- * `received_at`, same "New" vs "Already responded" split as Care/Share
- * Cards), not just the pending ones. */
+/** Only ever returned to the check-in's own author, which is why the audio
+ * payload is inlined instead of a separate fetch-by-id step. Includes both
+ * pending and already-thanked notes; the client buckets by `received_at`
+ * (same "New" vs "Already responded" split as Care/Share Cards). */
 export interface VoiceNoteDTO {
   id: UUID;
   checkin_id: UUID;
@@ -274,11 +269,9 @@ export interface VoiceNoteDTO {
 }
 
 /* --------------------------- In-app messages ---------------------------- */
-// The in-app replacement for the old off-app "Send a message" deep link —
-// a responder types a short message for the check-in's author, who reads
-// it in-app and says "Thank you" before it moves out of their New tab.
-// Structurally a sibling of voice notes: same lifecycle, same touchpoint
-// (TextSent) logged atomically with the send.
+// Replaces the old off-app "Send a message" deep link. Structurally a
+// sibling of voice notes: same lifecycle, same touchpoint (TextSent) logged
+// atomically with the send.
 
 export interface SendMessageRequest {
   body: string; // <= 300 chars

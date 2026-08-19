@@ -145,11 +145,9 @@ export function SperDashboardScreen({
     }
   });
 
-  // What the viewer sees as "something special": their own share (whichever
-  // kind their latest check-in produced), then everyone else's — either a
-  // genuinely all-positive check-in, or the leftover notes on one they've
-  // already cared for (which always shows, even with nothing positive left,
-  // since the action confirmation itself is the content there).
+  // The viewer's own latest share, plus everyone else's: an all-positive
+  // check-in as-is, or the leftover notes on one they've already cared for
+  // (shown regardless of remaining content, since the action itself is the point).
   const myShare: ShareableNote | null = myCareCard
     ? fromCareCard(myCareCard)
     : share.data?.find((c) => c.target_user_id === user?.id)
@@ -174,14 +172,12 @@ export function SperDashboardScreen({
   const pendingMessages = (myMessages.data ?? []).filter((m) => !m.received_at);
   const respondedMessages = (myMessages.data ?? []).filter((m) => !!m.received_at);
 
-  // "New" groups everything that still wants something from the viewer —
-  // an action on a Care Card, a first reaction to a share they haven't
-  // liked yet, or a voice note/message waiting on a "Thank you." "Already
-  // responded" is what they've already followed through on, kept around
-  // instead of vanishing so they can see it landed. A promoted action card
-  // belongs in "Already responded" the moment it's sent, regardless of like
-  // status — liking is for reacting to someone else's share, not a
-  // precondition for the viewer's own action to count as done.
+  // "New" = anything still wanting the viewer's input (a Care Card action, a
+  // first reaction to an unliked share, or an unthanked voice note/message).
+  // "Already responded" is what they've followed through on already. A card
+  // the viewer acted on counts as responded immediately regardless of like
+  // status — liking is for reacting to someone else's share, not a gate on
+  // the viewer's own action.
   const newShares = othersShare.filter((item) => !item.actionTypes?.length && !item.liked_by_me);
   const respondedShares = othersShare.filter((item) => !!item.actionTypes?.length || item.liked_by_me);
   const showNewSection =

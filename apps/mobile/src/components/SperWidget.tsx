@@ -5,11 +5,9 @@ import { MemberOrb } from './MemberOrb';
 import { space } from '../design/tokens';
 
 /**
- * The home surface: literally a circle of people. Each member is an avatar
- * ringed by their five check-in dimensions — no history scroll, no numbers,
- * just presence and weather. Tap anyone for the full picture. The viewer's
- * own entry always leads, labeled "You", so people don't have to hunt for
- * themselves in the row before checking on everyone else.
+ * The home surface: each member is an avatar ringed by their check-in
+ * dimensions — no history, no numbers, just presence. The viewer's own
+ * entry always sorts first so they don't have to hunt for themselves.
  */
 export function SperWidget({
   entries,

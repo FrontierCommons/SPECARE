@@ -72,6 +72,8 @@ async function raw<T>(
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
+  // On an expired access token, refresh once and retry; retryOn401: false on
+  // the retry stops us from looping forever if the new token also 401s.
   if (res.status === 401 && auth && retryOn401) {
     const refreshed = await tryRefresh();
     if (refreshed) return raw<T>(path, { ...opts, retryOn401: false });

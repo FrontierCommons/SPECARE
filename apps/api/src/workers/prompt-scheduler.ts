@@ -4,10 +4,9 @@ import { deviceRepo } from '../modules/users/devices.repo';
 import { pushProvider, type PushProvider } from '../delivery/push.provider';
 import type { CheckInFrequency, DevicePlatform } from '@sper/shared-types';
 
-/** Hours between prompts per cadence — mirrors the web client's own
- * countdown (apps/web/src/lib/time.ts CHECKIN_INTERVAL_HOURS) so the push
- * and the on-screen "next check-in in..." timer agree on when "due" means,
- * instead of two independent clocks drifting apart. */
+/** Hours between prompts per cadence. Mirrors apps/web/src/lib/time.ts
+ * CHECKIN_INTERVAL_HOURS so the push and the on-screen countdown agree on
+ * when a check-in is "due". */
 export const FREQUENCY_INTERVAL_HOURS: Record<CheckInFrequency, number> = {
   once: 24,
   twice: 12,
@@ -17,12 +16,9 @@ export const FREQUENCY_INTERVAL_HOURS: Record<CheckInFrequency, number> = {
 const HOUR_MS = 3_600_000;
 
 /**
- * True for exactly the one hourly tick during which `anchor + n*intervalHours`
- * falls, for whichever n >= 1 makes that timestamp <= now. An hourly poll
- * can therefore fire the prompt once per due window instead of every
- * subsequent hour once someone goes overdue (which the naive `now >= dueAt`
- * check would do forever, spamming them until they check in) — and n starts
- * at 1, not 0, so the moment of a fresh check-in itself never counts as due.
+ * True only for the one hourly tick when a due window opens (elapsed time
+ * modulo the interval falls within the last hour). Prevents a naive
+ * `now >= dueAt` check from re-firing every hour once someone goes overdue.
  */
 function isDueThisHour(anchor: Date, intervalHours: number, now: Date): boolean {
   const intervalMs = intervalHours * HOUR_MS;
@@ -36,13 +32,10 @@ export interface PromptSender {
 }
 
 /**
- * Core scheduler logic, decoupled from BullMQ. Intended to run hourly.
- * Fires per user off their OWN last check-in (or, before their first one,
- * account creation) plus their chosen cadence — not a shared clock-hour
- * schedule, so it's timezone-agnostic by construction (an elapsed duration
- * doesn't care what timezone either end happened in) and it can't drift
- * from the "next check-in in..." countdown the app shows, since both derive
- * from the same anchor + interval. Returns the number of prompts sent.
+ * Core scheduler logic, decoupled from BullMQ; intended to run hourly.
+ * Anchors each user's due time to their own last check-in (or account
+ * creation) plus cadence, rather than a shared clock hour — timezone-agnostic
+ * and matches the app's own countdown. Returns the number of prompts sent.
  */
 export async function runPromptScheduler(
   sender: PromptSender,

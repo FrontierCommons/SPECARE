@@ -7,10 +7,9 @@ import { PRESSABLE } from '../design/interaction';
 
 const SIZE = 96; // overall ring diameter
 const STROKE = 10; // bold — this is the whole point
-// Round line caps extend past each arc's geometric endpoint by ~STROKE/2 on
-// both sides, so a 10px stroke was eating most of the old 8° gap (only ~6px
-// of arc length at this radius) — two adjacent segments could visually touch.
-// Butt caps make the gap exactly match GAP_DEG with no encroachment.
+// Round caps would extend past each arc's endpoint by ~STROKE/2, eating into
+// the gap enough for adjacent segments to visually touch — butt caps keep
+// the gap exactly GAP_DEG.
 const GAP_DEG = 10; // breathing room between arcs
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;

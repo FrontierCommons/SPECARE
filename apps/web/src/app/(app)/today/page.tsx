@@ -184,15 +184,12 @@ export default function TodayPage() {
   const pendingMessages = (myMessages.data ?? []).filter((m) => !m.received_at);
   const respondedMessages = (myMessages.data ?? []).filter((m) => !!m.received_at);
 
-  // "New" groups everything that still wants something from the viewer —
-  // an action on a Care Card, a first reaction to a share they haven't
-  // liked yet, or a voice note/message waiting on a "Thank you." "Already
-  // responded" is what they've already followed through on, kept around
-  // instead of vanishing so they can see it landed. A promoted action card
-  // (the viewer already prayed/called/sent something) belongs in "Already
-  // responded" the moment it's sent, regardless of like status — liking is
-  // for reacting to someone else's share, not a precondition for the
-  // viewer's own action to count as done.
+  // "New" = still wants something from the viewer (a Care Card action, a
+  // first reaction to an unliked share, or an unthanked voice note/message).
+  // "Already responded" = already followed through, kept visible instead of
+  // vanishing. A sent action card counts as responded immediately regardless
+  // of like status — liking is for reacting to someone else's share, not a
+  // precondition for the viewer's own action to count as done.
   const newShares = othersShare.filter((item) => !item.actionTypes?.length && !item.liked_by_me);
   const respondedShares = othersShare.filter((item) => !!item.actionTypes?.length || item.liked_by_me);
   const showNewSection =

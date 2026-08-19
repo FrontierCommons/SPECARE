@@ -6,12 +6,11 @@ import type { CircleNotificationRow } from '../../db/schema';
 type Executor = DB | Parameters<Parameters<DB['transaction']>[0]>[0];
 
 /**
- * Phase 2 (delivery layer) implements this to fan out push/email.
- * Phase 1 keeps a no-op so the domain core runs standalone and testable.
- * The dispatch is intentionally fire-and-forget relative to the DB tx:
- * the notification RECORD is committed transactionally; the physical SEND
- * happens after commit (see CheckInService), so a push failure never rolls
- * back a valid check-in.
+ * Phase 2 (delivery layer) implements this to fan out push/email; Phase 1
+ * defaults to a no-op so the domain core runs standalone. Dispatch is
+ * deliberately fire-and-forget: the record commits transactionally, but the
+ * send happens after commit (see CheckInService), so a push failure never
+ * rolls back a valid check-in.
  */
 export interface NotificationDispatcher {
   dispatchDistress(input: {

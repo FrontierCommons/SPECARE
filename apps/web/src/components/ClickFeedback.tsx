@@ -19,11 +19,9 @@ const RIPPLE_LIFETIME_MS = 450;
 
 let sharedAudioCtx: AudioContext | null = null;
 
-/** A short, soft synthesized tick — no audio asset to ship, just a brief
- * sine blip with a fast attack/decay envelope so it reads as a gentle tap,
- * not a notification chime. Lazily creates one AudioContext per page (the
- * browser requires it start from a user gesture, and a click is exactly
- * that) and reuses it for every subsequent click. */
+/** A short synthesized tick (no audio asset to ship) that reads as a gentle
+ * tap, not a chime. Reuses one lazily-created AudioContext per page since
+ * browsers require it start from a user gesture — a click qualifies. */
 function playClickTone() {
   try {
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -51,15 +49,11 @@ function playClickTone() {
 }
 
 /**
- * App-wide click feedback: a ripple that expands from the tap point but
- * stays clipped to the shape of the button/tab/link that was actually
- * clicked, plus a short synthesized tick — via one document-level listener
- * instead of per-component wiring, so every functional control gets the
- * same felt response automatically. Rendered as a fixed-position overlay
- * sized to match the clicked element's own rect (captured at click time)
- * rather than injected as a real child of it, so this never touches React's
- * ownership of that element's DOM subtree. Hover highlighting for
- * pointer/mouse users is plain CSS, in globals.css.
+ * App-wide click feedback via one document-level listener, so every
+ * button/tab/link gets the same ripple + tick for free with no per-component
+ * wiring. Renders as an overlay sized to the clicked element's captured rect
+ * rather than as a real child, so it never touches React's DOM ownership of
+ * that element. (Hover styling is separate, plain CSS in globals.css.)
  */
 export function ClickFeedback() {
   const [ripples, setRipples] = useState<Ripple[]>([]);

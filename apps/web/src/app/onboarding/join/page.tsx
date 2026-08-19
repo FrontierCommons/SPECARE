@@ -17,6 +17,8 @@ export default function JoinPage() {
     <div className="sper-warm-glow relative mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center bg-bg p-lg">
       <button
         onClick={() => {
+          // Lets RootGate stop routing here on future visits, instead of
+          // bouncing back into onboarding.
           void markOnboardingDeferred();
           router.push('/today');
         }}

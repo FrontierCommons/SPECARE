@@ -8,10 +8,8 @@ interface Props extends PressableProps {
 }
 
 /**
- * Drop-in replacement for Pressable that actually feels pressed: a quick
- * scale-down "bubble" on touch down, springing back on release. Used
- * throughout the app so every tap gives the same tactile response instead of
- * a flat, unacknowledged press.
+ * Drop-in Pressable replacement that scales down on touch and springs back
+ * on release, so every tap in the app gets the same tactile feedback.
  */
 export function Touchable({ scaleTo = 0.95, onPressIn, onPressOut, children, ...props }: Props) {
   const scale = useRef(new Animated.Value(1)).current;

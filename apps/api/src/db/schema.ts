@@ -179,11 +179,8 @@ export const touchpointLogs = pgTable(
 );
 
 /* --------------------------- Care gratitude ---------------------------- */
-// A target thanking their responders. One row per (checkin, responder) —
-// thanking is idempotent per responder so a repeat "Thank you!" only reaches
-// people who weren't covered by an earlier one. `seenAt` is set the first
-// time the responder's care-cards fetch surfaces it, which is also the
-// signal to stop showing it on their main dashboard afterward.
+// A target thanking their responders; one row per (checkin, responder) keeps repeat "Thank you!" taps
+// idempotent. `seenAt` is set on the first care-cards fetch that surfaces it, which also hides it from the dashboard.
 
 export const careGratitudes = pgTable(
   'care_gratitudes',
@@ -205,11 +202,9 @@ export const careGratitudes = pgTable(
 );
 
 /* ----------------------------- Check-in likes --------------------------- */
-// A circle member liking a check-in's notes — either a "wants to share
-// something special" moment (no distress at all) or, once someone's cared
-// for a distressed check-in, the leftover non-distress notes on it. One row
-// per (checkin, liker); the unique index makes toggling idempotent — like
-// twice and the second call just unlikes.
+// A circle member liking a check-in's notes — either a no-distress "share something special" moment, or the
+// leftover notes on a distressed check-in once it's been cared for. Unique index per (checkin, liker) makes
+// toggling idempotent: liking twice just unlikes.
 
 export const checkinLikes = pgTable(
   'checkin_likes',
@@ -230,13 +225,9 @@ export const checkinLikes = pgTable(
 );
 
 /* ---------------------------- Voice notes ------------------------------ */
-// A responder's in-app recording for a distressed check-in's author.
-// Audio is stored inline as base64 (clips are capped at 30s, comfortably
-// small) rather than in object storage — no such infra exists yet and this
-// avoids adding it for what stays a low-volume, ephemeral attachment.
-// `receivedAt` is set once the target opens and acknowledges it; from then
-// on it's excluded from the pending list, which is the "disappears" the
-// product asked for — the row itself is kept for audit, not hard-deleted.
+// A responder's in-app recording for a distressed check-in's author. Stored inline as base64 (30s cap keeps
+// clips small) rather than in object storage, since none exists yet for this low-volume, ephemeral attachment.
+// `receivedAt` marks it acknowledged and drops it from the pending list — kept for audit, not hard-deleted.
 
 export const voiceNotes = pgTable(
   'voice_notes',
@@ -284,10 +275,8 @@ export const checkinMessages = pgTable(
 );
 
 /* --------------------------- Care gap alerts --------------------------- */
-// One row per checkin that ever triggered a care-gap nudge — the unique
-// index on checkin_id is what makes the worker loop idempotent, so a
-// distress checkin only ever nudges the circle once, no matter how many
-// times the loop ticks over it before a touchpoint lands.
+// One row per checkin that ever triggered a care-gap nudge. The unique index on checkin_id makes the worker
+// loop idempotent — a distress checkin nudges the circle only once, however many times the loop ticks over it.
 
 export const careGapAlerts = pgTable(
   'care_gap_alerts',

@@ -1,20 +1,16 @@
 /**
- * SPER design tokens (web port). Palette is warm by intent: nothing here
- * should feel like a dashboard or a game. State colors read as weather
- * (clear → storm) to fit the Sper metaphor, deliberately NOT a green-to-red
- * performance ramp. Kept in sync by hand with apps/mobile/src/design/tokens.ts
- * — see that file for the source of truth on values (mobile is dark-only;
- * the light theme below is a web-only addition, see the Appearance setting).
+ * SPER design tokens (web port), kept in sync by hand with
+ * apps/mobile/src/design/tokens.ts — that file is the source of truth on
+ * values (mobile is dark-only; the light theme here is a web-only addition,
+ * see the Appearance setting). State colors read as weather (clear → storm),
+ * deliberately not a green-to-red performance ramp.
  *
- * Theme-dependent tokens (bg/surface/border/text/sageText/amberText/
- * bloomText) resolve through CSS custom properties defined in globals.css
- * under `:root`/`[data-theme="dark"]` and `[data-theme="light"]`, so a
- * single `data-theme` attribute on <html> (see state/theme.tsx) repaints
- * every one of these at once — including plain inline `style={}` usages,
- * since `var(--x)` is a valid CSS value wherever a hex string would be.
- * Everything else here (accent fills, state colors, the tree card's own
- * mood-colored backdrop) is the same in both themes: those are
- * self-contained fills paired with a fixed text color, not page chrome.
+ * Theme-dependent tokens resolve through CSS custom properties defined in
+ * globals.css under `:root`/`[data-theme]`, so one `data-theme` attribute on
+ * <html> (see state/theme.tsx) repaints all of them at once, including plain
+ * inline `style={}` usage. Everything else (accent fills, state colors, the
+ * tree card's mood-colored backdrop) is a self-contained fill that stays the
+ * same in both themes.
  */
 
 import type { StateLevel } from '@sper/shared-types';

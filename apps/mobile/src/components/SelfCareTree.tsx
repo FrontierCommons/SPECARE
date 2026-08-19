@@ -14,12 +14,9 @@ import { strings } from '../design/strings';
 const THANKED_KEY_PREFIX = 'sper.thankedCount.';
 
 /**
- * Your own tree, always visible when you've checked in today — not just on
- * hard days. Healthy whenever you're not distressed, OR when you are but
- * someone has already prayed for you; withering only when you're distressed
- * and no one has yet. No names, no action buttons — you can't water your own
- * tree, only your circle can. Once someone has reached out, "Thank you!" lets
- * you send gratitude their way; repeatable, since more people may respond later.
+ * Your own tree: healthy unless you're distressed and no one has responded
+ * yet. No action buttons — you can't water your own tree, only your circle
+ * can. "Thank you" is repeatable since more people may respond later.
  */
 export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: number }) {
   const { activeCircleId } = useSession();
@@ -35,11 +32,9 @@ export function SelfCareTree({ entry, count }: { entry: SperEntryDTO; count: num
     if (resetTimer.current) clearTimeout(resetTimer.current);
   }, []);
 
-  // How many touchpoints existed the last time this member said thanks —
-  // persisted so a already-thanked batch of care stays quiet across app
-  // restarts and pull-to-refresh, not just for the current mount. Only a
-  // touchpoint count higher than this (someone new reaching out) reopens
-  // the "someone cares" prompt.
+  // Touchpoint count as of the last "thank you", persisted so an
+  // already-acknowledged batch of care stays quiet across restarts; only a
+  // higher count (someone new reaching out) reopens the prompt.
   const storageKey = `${THANKED_KEY_PREFIX}${entry.checkin_id ?? ''}`;
   const [thankedCount, setThankedCount] = useState(0);
   useEffect(() => {

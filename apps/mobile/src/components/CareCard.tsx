@@ -23,15 +23,10 @@ interface Props {
 }
 
 /**
- * The responder's view when a friend has flagged distress. Leads with the
- * person, not the data; every action is off-app, a quiet log, or an
- * in-app send.
- *
- * Once the viewer has cared for the flagged part, the caller (the dashboard
- * screen) stops rendering this card at all and promotes its non-distress
- * notes into a ShareCard instead — so everything here assumes the viewer
- * hasn't acted yet, and stays purely informational + collapsed for anything
- * not flagged.
+ * The responder's view when a friend has flagged distress — leads with the
+ * person, not the data. Once the viewer acts, the dashboard stops rendering
+ * this card and promotes it into a ShareCard instead, so everything here can
+ * assume the viewer hasn't acted yet.
  */
 export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessage, alreadyReached }: Props) {
   const selfReached = alreadyReached?.includes('You') ?? false;
@@ -40,9 +35,9 @@ export function CareCard({ card, entry, onLogCare, onSendVoiceNote, onSendMessag
   // Collapsed by default — these aren't part of what needs a response, so
   // they shouldn't compete for attention with the actions below.
   const [showOtherNotes, setShowOtherNotes] = useState(false);
-  // Per-dimension "I'd rather explain" text was tagged by dimension name when
-  // it was saved, so it can be shown as that dimension's own answer instead
-  // of a separate note; whatever's left over is genuinely untagged context.
+  // Per-dimension explain text was tagged by dimension name on save, so it
+  // can render as that dimension's own answer; anything left over is
+  // untagged context.
   const { perDimension, general } = parseCheckInNote(card.optional_note);
   // An explained dimension that isn't Heavy/In the Pit never made it into
   // flagged_dimensions (the server only flags distress) — it still deserves

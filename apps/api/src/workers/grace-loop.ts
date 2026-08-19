@@ -38,9 +38,8 @@ export async function runGraceLoop(
 
   let processed = 0;
   for (const u of stale) {
-    // Never nudge for a user who has never checked in AND just registered:
-    // require a real gap. isNull(lastCheckinAt) users who registered < 14d ago
-    // are excluded by created_at guard.
+    // The query above can't express "never checked in but signed up recently" via SQL
+    // alone (isNull matches regardless of signup date), so recheck against createdAt here.
     const [full] = await database.select().from(users).where(eq(users.id, u.id)).limit(1);
     if (!full) continue;
     const reference = full.lastCheckinAt ?? full.createdAt;

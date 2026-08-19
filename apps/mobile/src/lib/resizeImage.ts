@@ -4,14 +4,12 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 const AVATAR_SIZE = 256;
 
 /**
- * Opens the photo library, then center-crops and downsizes the pick to a
- * small square JPEG data URI before it's ever sent anywhere. There's no
- * object storage in this app (avatars ride inline in the same
- * base64-in-Postgres pattern voice notes use), and unlike a voice note, an
- * avatar rides along on every member-list and circle response — so it has
- * to stay small at the source, not just capped server-side.
- *
- * Returns null if the user cancels or permission is denied.
+ * Center-crops and downsizes the picked photo to a small square JPEG data
+ * URI — avatars ride inline (base64-in-Postgres, like voice notes) rather
+ * than object storage, and unlike a voice note an avatar rides along on
+ * every member-list and circle response, so it must stay small at the
+ * source rather than just capped server-side. Returns null if the user
+ * cancels or permission is denied.
  */
 export async function pickAndResizeAvatar(): Promise<string | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();

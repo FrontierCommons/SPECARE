@@ -30,11 +30,9 @@ type Phase = 'idle' | 'recording' | 'review' | 'sending';
  * before sending, mirroring `VoiceNoteBanner`'s receive-side playback.
  */
 export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
-  // HIGH_QUALITY, not LOW_QUALITY: LOW_QUALITY records AMR-NB in a .3gp
-  // container on Android but AAC on iOS — two different, cross-incompatible
-  // formats both shipped to the receiver labeled "audio/m4a". HIGH_QUALITY
-  // is AAC/.m4a on both platforms, which is what that mime type actually
-  // requires to be playable on the other platform.
+  // HIGH_QUALITY, not LOW_QUALITY: LOW_QUALITY records AMR-NB (.3gp) on
+  // Android but AAC on iOS — two incompatible formats both mislabeled
+  // "audio/m4a". HIGH_QUALITY is actually AAC/.m4a on both platforms.
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder, 100);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -42,9 +40,8 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // The recorder's own `uri` is already a real local file:// URI — no
-  // cache-file round-trip needed here (unlike VoiceNoteBanner's receive side,
-  // which has to write the incoming base64 payload out first).
+  // The recorder's own `uri` is already a real file:// URI — unlike
+  // VoiceNoteBanner's receive side, no cache-file round-trip is needed.
   const previewPlayer = useAudioPlayer(phase === 'review' ? recordedUri : null);
   const previewStatus = useAudioPlayerStatus(previewPlayer);
 
@@ -105,10 +102,9 @@ export function VoiceRecorderSheet({ visible, onClose, onSend }: Props) {
         setError(strings.care.recordMicDenied);
         return;
       }
-      // Required on iOS — the audio session defaults to playback-only, so
-      // recording throws until this is set. playsInSilentMode must come
-      // along with it: recording categories on iOS ignore the silent
-      // switch, so the two can't be set independently.
+      // allowsRecording is required on iOS (session defaults to playback-only).
+      // playsInSilentMode must be set together with it — iOS recording
+      // categories ignore the silent switch, so they can't be set separately.
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();

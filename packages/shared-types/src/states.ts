@@ -35,7 +35,6 @@ export type DevicePlatform = (typeof DEVICE_PLATFORMS)[number];
 export const CHECKIN_FREQUENCIES = ['once', 'twice', 'thrice'] as const;
 export type CheckInFrequency = (typeof CHECKIN_FREQUENCIES)[number];
 
-/** Type guards + helpers. */
 export function isStateLevel(v: unknown): v is StateLevel {
   return typeof v === 'string' && (STATE_LEVELS as readonly string[]).includes(v);
 }

@@ -3,12 +3,10 @@ import { parseCheckInNote } from './checkinNote';
 import { DIMENSIONS } from './checkinState';
 
 /**
- * Common shape ShareCard renders, regardless of where the data came from:
- * a genuinely all-positive check-in (ShareCardDTO, flagged_dimensions always
- * empty) or the leftover non-distress notes on a check-in someone has
- * already cared for (CareCardDTO, once promoted out of the Care Card list).
- * `flagged_dimensions` rides along so ShareCard can filter those dimensions
- * out of the note even when the source was a Care Card.
+ * Common shape ShareCard renders, whether from an all-positive check-in
+ * (ShareCardDTO) or the leftover non-distress notes on an already-cared-for
+ * check-in (CareCardDTO). `flagged_dimensions` lets ShareCard filter those
+ * dimensions out even when the source was a Care Card.
  */
 export interface ShareableNote {
   checkin_id: string;

@@ -3,10 +3,9 @@ import { Animated, Text, StyleSheet } from 'react-native';
 import { color, elevation, motion, radius, space, type } from '../design/tokens';
 
 /**
- * A brief in-app notification that slides down from the top and springs
- * back out of view — used for events that happen while you're already
- * looking at the app (like a circle member praying for you) rather than
- * a push notification, which is for when you're not.
+ * A brief in-app slide-down notification for events that happen while
+ * you're already in the app (e.g. a circle member praying for you) — push
+ * notifications cover the same events when you're not.
  */
 export function Toast({ message, visible }: { message: string; visible: boolean }) {
   const translateY = useRef(new Animated.Value(-100)).current;
